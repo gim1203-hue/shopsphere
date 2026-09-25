@@ -1,4 +1,5 @@
 const ALLOWED_METHODS = new Set(['GET'])
+import { signProduct } from './_lib/productToken.js'
 
 export default async function handler(request, response) {
   if (!ALLOWED_METHODS.has(request.method)) {
@@ -49,6 +50,7 @@ export default async function handler(request, response) {
       details: ['Live marketplace result', item.delivery].filter(Boolean),
       tags: [query, item.source, 'live product'].filter(Boolean),
     })).filter((item) => item.name && item.image && item.sourcePrice > 0)
+      .map((item) => ({ ...item, checkoutToken: signProduct(item) }))
 
     response.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=600')
     return response.status(200).json({ products })

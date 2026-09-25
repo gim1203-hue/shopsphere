@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useState } from 'react'
 import { products } from '../data/products'
 
 const StoreContext = createContext(null)
@@ -37,7 +37,7 @@ export function StoreProvider({ children }) {
 
   const updateQuantity = (id, quantity) => setCart((current) => current.map((item) => item.id === id ? { ...item, quantity: Math.max(1, Math.min(quantity, item.stock)) } : item))
   const removeFromCart = (id) => setCart((current) => current.filter((item) => item.id !== id))
-  const clearCart = () => setCart([])
+  const clearCart = useCallback(() => setCart([]), [])
   const toggleFavorite = (id) => {
     const product = products.find((item) => item.id === id)
     setFavorites((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id])

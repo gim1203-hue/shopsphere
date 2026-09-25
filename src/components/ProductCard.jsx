@@ -31,7 +31,9 @@ export default function ProductCard({
     getAskKhanPrice(sourcePrice)
 
   const available =
-    product.stock === undefined
+    product.externalUrl && !product.checkoutToken
+      ? false
+      : product.stock === undefined
       ? true
       : Number(product.stock) > 0
 
