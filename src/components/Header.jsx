@@ -40,6 +40,7 @@ export default function Header() {
         product.color,
         product.description,
         ...(product.details || []),
+        ...(product.tags || []),
       ])
     ),
   ]
@@ -51,9 +52,7 @@ export default function Header() {
 
     const cleanQuery = query.trim()
 
-    if (!cleanQuery) {
-      return
-    }
+    if (!cleanQuery) return
 
     navigate(
       `/shop?q=${encodeURIComponent(cleanQuery)}`
@@ -154,15 +153,9 @@ export default function Header() {
 
             <Link
               className="icon-button"
-              to={
-                user
-                  ? '/account'
-                  : '/login'
-              }
+              to={user ? '/account' : '/login'}
               aria-label={
-                user
-                  ? 'My account'
-                  : 'Sign in'
+                user ? 'My account' : 'Sign in'
               }
             >
               <UserRound />
@@ -213,19 +206,17 @@ export default function Header() {
                 onChange={(event) =>
                   setQuery(event.target.value)
                 }
-                placeholder="Search AskKhan products, categories, brands..."
+                placeholder="Search AskKhan..."
                 aria-label="Search AskKhan"
               />
 
               <datalist id="askkhan-search-options">
-                {searchOptions.map(
-                  (option) => (
-                    <option
-                      key={option}
-                      value={option}
-                    />
-                  )
-                )}
+                {searchOptions.map((option) => (
+                  <option
+                    key={option}
+                    value={option}
+                  />
+                ))}
               </datalist>
 
               <button type="submit">

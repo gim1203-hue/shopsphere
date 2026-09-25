@@ -5,7 +5,7 @@ export const categories = [
   { name: 'Wellness', image: 'https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?auto=format&fit=crop&w=900&q=80' },
 ]
 
-export const products = [
+const baseProducts = [
   {
     id: 1, name: 'Arc Lounge Chair', category: 'Home', price: 649, originalPrice: 760, rating: 4.9, reviews: 128, stock: 7, featured: true,
     image: 'https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?auto=format&fit=crop&w=1200&q=85',
@@ -79,3 +79,32 @@ export const products = [
     details: ['Hot-swappable switches', 'Multi-device Bluetooth', 'Backlit keys', 'Mac and Windows'], color: 'Stone',
   },
 ]
+export const products = baseProducts.map(
+  (product) => ({
+    ...product,
+
+    sourcePrice:
+      product.sourcePrice ??
+      product.price,
+
+    price: Number(
+      (
+        Number(
+          product.sourcePrice ??
+            product.price
+        ) * 1.1
+      ).toFixed(2)
+    ),
+
+    brand:
+      product.brand ||
+      'AskKhan Marketplace',
+
+    tags:
+      product.tags || [
+        product.name,
+        product.category,
+        product.color,
+      ].filter(Boolean),
+  })
+)
