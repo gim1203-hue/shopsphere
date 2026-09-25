@@ -1,71 +1,86 @@
 import { createContext, useContext, useEffect, useState } from 'react'
-import { isSupabaseConfigured, supabase } from '../lib/supabase'
+import { createUserWithEmailAndPassword, onAuthStateChanged, sendPasswordResetEmail, signInWithEmailAndPassword, signOut as firebaseSignOut, updatePassword, updateProfile as updateFirebaseProfile } from 'firebase/auth'
+import { firebaseAuth, isFirebaseConfigured } from '../lib/supabase'
 
 const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null)
   const [profile, setProfile] = useState(null)
-  const [loading, setLoading] = useState(isSupabaseConfigured)
+  const [loading, setLoading] = useState(isFirebaseConfigured)
 
-  const loadProfile = async (user) => {
-    if (!user || !supabase) {
-      setProfile(null)
-      return
-    }
-    const { data } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle()
-    setProfile(data)
+  const loadProfile = (user) => {
+    const [firstName = '', ...lastNames] = (user?.displayName || '').split(' ')
+    setProfile(user ? { first_name: firstName, last_name: lastNames.join(' ') } : null)
   }
 
   useEffect(() => {
-    if (!supabase) return undefined
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session)
-      loadProfile(data.session?.user)
+    if (!firebaseAuth) return undefined
+    return onAuthStateChanged(firebaseAuth, (nextUser) => {
+      setSession(nextUser)
+      loadProfile(nextUser)
       setLoading(false)
     })
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession)
-      loadProfile(nextSession?.user)
-      setLoading(false)
-    })
-    return () => listener.subscription.unsubscribe()
   }, [])
 
   const signUp = async ({ email, password, firstName, lastName }) => {
-    if (!supabase) return { error: new Error('Supabase is not configured yet.') }
-    return supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { first_name: firstName, last_name: lastName },
-        emailRedirectTo: window.location.origin + window.location.pathname,
-      },
-    })
+    if (!firebaseAuth) return { error: new Error('Firebase is not configured yet.') }
+    try {
+      const data = await createUserWithEmailAndPassword(firebaseAuth, email, password)
+      await updateFirebaseProfile(data.user, { displayName: `${firstName} ${lastName}`.trim() })
+      return { data, error: null }
+    } catch (error) {
+      return { data: null, error }
+    }
   }
 
   const signIn = async ({ email, password }) => {
-    if (!supabase) return { error: new Error('Supabase is not configured yet.') }
-    return supabase.auth.signInWithPassword({ email, password })
+    if (!firebaseAuth) return { error: new Error('Firebase is not configured yet.') }
+    try {
+      const data = await signInWithEmailAndPassword(firebaseAuth, email, password)
+      return { data, error: null }
+    } catch (error) {
+      return { data: null, error }
+    }
   }
 
   const signOut = async () => {
-    if (supabase) await supabase.auth.signOut()
+    if (firebaseAuth) await firebaseSignOut(firebaseAuth)
   }
 
   const resetPassword = async (email) => {
-    if (!supabase) return { error: new Error('Supabase is not configured yet.') }
-    return supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}${window.location.pathname}#/reset-password` })
+    if (!firebaseAuth) return { error: new Error('Firebase is not configured yet.') }
+    try {
+      await sendPasswordResetEmail(firebaseAuth, email)
+      return { error: null }
+    } catch (error) {
+      return { error }
+    }
   }
 
   const updateProfile = async (changes) => {
-    if (!supabase || !session?.user) return { error: new Error('You must be logged in.') }
-    const { data, error } = await supabase.from('profiles').update(changes).eq('id', session.user.id).select().single()
-    if (!error) setProfile(data)
-    return { data, error }
+    if (!firebaseAuth || !session) return { error: new Error('You must be logged in.') }
+    try {
+      await updateFirebaseProfile(session, { displayName: `${changes.first_name} ${changes.last_name}`.trim() })
+      loadProfile(session)
+      return { data: session, error: null }
+    } catch (error) {
+      return { data: null, error }
+    }
   }
 
-  const value = { user: session?.user ?? null, session, profile, loading, configured: isSupabaseConfigured, signUp, signIn, signOut, resetPassword, updateProfile }
+  const changePassword = async (password) => {
+    if (!session) return { error: new Error('You must be logged in.') }
+    try {
+      await updatePassword(session, password)
+      return { error: null }
+    } catch (error) {
+      return { error }
+    }
+  }
+
+  const user = session ? { ...session, created_at: session.metadata?.creationTime, user_metadata: profile } : null
+  const value = { user, session, profile, loading, configured: isFirebaseConfigured, signUp, signIn, signOut, resetPassword, updateProfile, changePassword }
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 

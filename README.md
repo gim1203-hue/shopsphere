@@ -10,13 +10,13 @@ A refined, responsive e-commerce storefront built with React and Vite. ShopSpher
 - Favorites and shopping cart persisted in local storage
 - Form validation and simulated checkout flow
 - Email/password registration, login, password reset, and protected account page
-- Supabase profile storage with Row Level Security policies
+- Firebase email/password authentication and customer profiles
 - Empty states, missing-product handling, and a 404 page
 - Responsive navigation and layouts for desktop, tablet, and mobile
 
 ## Technologies
 
-React, React Router, Context API, Vite, Supabase Auth/Postgres, Lucide React, CSS, and localStorage.
+React, React Router, Context API, Vite, Firebase Auth, Lucide React, CSS, and localStorage.
 
 ## Run locally
 
@@ -29,18 +29,22 @@ Create a production build with `npm run build`.
 
 ## Configure customer accounts
 
-1. Create a Supabase project.
-2. Open its SQL Editor and run `supabase/schema.sql`.
+1. Create a Firebase project and register a web app.
+2. In Authentication, enable the Email/Password provider.
 3. Copy `.env.example` to `.env.local`.
-4. Add the project URL and publishable key from the Supabase Connect dialog.
-5. In Supabase Authentication URL Configuration, set the Site URL to the deployed GitHub Pages URL and add the same URL to Redirect URLs.
+4. Add the Firebase web app configuration values from Project settings.
+5. Add the same six values as GitHub Actions repository secrets for public deployment.
 
 ```env
-VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
+VITE_FIREBASE_API_KEY=your-api-key
+VITE_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your-project-id
+VITE_FIREBASE_STORAGE_BUCKET=your-project.firebasestorage.app
+VITE_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
+VITE_FIREBASE_APP_ID=your-app-id
 ```
 
-For GitHub Pages, create repository secrets with those same two names. The deployment workflow exposes them only as the public values required by the Vite build. Never use a Supabase service-role key in this application.
+For GitHub Pages, create repository secrets with those same six names. Firebase web configuration values are public client settings; do not place private server credentials in the frontend.
 
 ## Project structure
 
