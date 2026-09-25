@@ -1,10 +1,12 @@
-import { Heart, Menu, Search, ShoppingBag, X } from 'lucide-react'
+import { Heart, Menu, Search, ShoppingBag, UserRound, X } from 'lucide-react'
 import { useState } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { useStore } from '../context/StoreContext'
+import { useAuth } from '../context/AuthContext'
 
 export default function Header() {
   const { cartCount, favorites } = useStore()
+  const { user } = useAuth()
   const [menuOpen, setMenuOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -32,6 +34,7 @@ export default function Header() {
           </nav>
           <div className="header-actions">
             <button className="icon-button search-trigger" onClick={() => setSearchOpen(!searchOpen)} aria-label="Search"><Search /></button>
+            <Link className="icon-button" to={user ? '/account' : '/login'} aria-label={user ? 'My account' : 'Sign in'}><UserRound /></Link>
             <Link className="icon-button" to="/favorites" aria-label={`Favorites, ${favorites.length} items`}><Heart />{favorites.length > 0 && <span className="count-badge">{favorites.length}</span>}</Link>
             <Link className="icon-button" to="/cart" aria-label={`Cart, ${cartCount} items`}><ShoppingBag />{cartCount > 0 && <span className="count-badge">{cartCount}</span>}</Link>
           </div>

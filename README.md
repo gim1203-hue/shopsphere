@@ -9,12 +9,14 @@ A refined, responsive e-commerce storefront built with React and Vite. ShopSpher
 - Product detail pages with quantity controls
 - Favorites and shopping cart persisted in local storage
 - Form validation and simulated checkout flow
+- Email/password registration, login, password reset, and protected account page
+- Supabase profile storage with Row Level Security policies
 - Empty states, missing-product handling, and a 404 page
 - Responsive navigation and layouts for desktop, tablet, and mobile
 
 ## Technologies
 
-React, React Router, Context API, Vite, Lucide React, CSS, and localStorage.
+React, React Router, Context API, Vite, Supabase Auth/Postgres, Lucide React, CSS, and localStorage.
 
 ## Run locally
 
@@ -24,6 +26,21 @@ npm run dev
 ```
 
 Create a production build with `npm run build`.
+
+## Configure customer accounts
+
+1. Create a Supabase project.
+2. Open its SQL Editor and run `supabase/schema.sql`.
+3. Copy `.env.example` to `.env.local`.
+4. Add the project URL and publishable key from the Supabase Connect dialog.
+5. In Supabase Authentication URL Configuration, set the Site URL to the deployed GitHub Pages URL and add the same URL to Redirect URLs.
+
+```env
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
+```
+
+For GitHub Pages, create repository secrets with those same two names. The deployment workflow exposes them only as the public values required by the Vite build. Never use a Supabase service-role key in this application.
 
 ## Project structure
 
