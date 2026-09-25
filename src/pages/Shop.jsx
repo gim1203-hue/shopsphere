@@ -5,6 +5,7 @@ import {
 } from 'lucide-react'
 
 import {
+  useEffect,
   useMemo,
   useState,
 } from 'react'
@@ -16,6 +17,7 @@ import {
 import PageIntro from '../components/PageIntro'
 import ProductCard from '../components/ProductCard'
 import { products } from '../data/products'
+import { searchProducts } from '../services/productSearch'
 
 export default function Shop() {
   const [params, setParams] =
@@ -26,6 +28,10 @@ export default function Shop() {
     setFiltersOpen,
   ] = useState(false)
 
+  const [liveProducts, setLiveProducts] = useState([])
+  const [searching, setSearching] = useState(false)
+  const [searchMessage, setSearchMessage] = useState('')
+
   const query =
     params.get('q') || ''
 
@@ -34,6 +40,40 @@ export default function Shop() {
 
   const sort =
     params.get('sort') || 'featured'
+
+  useEffect(() => {
+    const cleanQuery = query.trim()
+
+    if (cleanQuery.length < 2) {
+      setLiveProducts([])
+      setSearching(false)
+      setSearchMessage('')
+      return undefined
+    }
+
+    let cancelled = false
+    const timer = window.setTimeout(async () => {
+      setSearching(true)
+      setSearchMessage('')
+
+      try {
+        const results = await searchProducts(cleanQuery)
+        if (!cancelled) setLiveProducts(results)
+      } catch (error) {
+        if (!cancelled) {
+          setLiveProducts([])
+          setSearchMessage(error.message)
+        }
+      } finally {
+        if (!cancelled) setSearching(false)
+      }
+    }, 500)
+
+    return () => {
+      cancelled = true
+      window.clearTimeout(timer)
+    }
+  }, [query])
 
   const categories =
     useMemo(() => {
@@ -190,6 +230,19 @@ export default function Shop() {
       sort,
     ])
 
+  const displayedProducts = useMemo(() => {
+    const combined = query.trim().length >= 2
+      ? [...filtered, ...liveProducts]
+      : filtered
+
+    return [...combined].sort((a, b) => {
+      if (sort === 'price-low') return Number(a.price ?? a.sourcePrice) - Number(b.price ?? b.sourcePrice)
+      if (sort === 'price-high') return Number(b.price ?? b.sourcePrice) - Number(a.price ?? a.sourcePrice)
+      if (sort === 'rating') return Number(b.rating || 0) - Number(a.rating || 0)
+      return Number(b.featured) - Number(a.featured)
+    })
+  }, [filtered, liveProducts, query, sort])
+
   return (
     <>
       <PageIntro
@@ -307,8 +360,8 @@ export default function Shop() {
             </button>
 
             <span>
-              {filtered.length}{' '}
-              {filtered.length === 1
+              {displayedProducts.length}{' '}
+              {displayedProducts.length === 1
                 ? 'product'
                 : 'products'}
             </span>
@@ -341,9 +394,12 @@ export default function Shop() {
             </select>
           </div>
 
-          {filtered.length ? (
+          {searching && <p className="search-status">Searching the marketplace…</p>}
+          {searchMessage && <p className="search-status search-error">{searchMessage}</p>}
+
+          {displayedProducts.length ? (
             <div className="product-grid shop-grid">
-              {filtered.map(
+              {displayedProducts.map(
                 (product) => (
                   <ProductCard
                     product={product}

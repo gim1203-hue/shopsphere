@@ -41,21 +41,31 @@ export default function ProductCard({
     price: askKhanPrice,
   }
 
+  const productImage = (
+    <img
+      src={product.image}
+      alt={product.name}
+      onError={(event) => {
+        event.currentTarget.src =
+          'https://placehold.co/800x900/f1eee7/5f665f?text=Image+unavailable'
+      }}
+    />
+  )
+
+  const productName = product.externalUrl ? (
+    <a href={product.externalUrl} target="_blank" rel="noreferrer">{product.name}</a>
+  ) : (
+    <Link to={`/products/${product.id}`}>{product.name}</Link>
+  )
+
   return (
     <article className="product-card">
       <div className="product-image-wrap">
-        <Link
-          to={`/products/${product.id}`}
-        >
-          <img
-            src={product.image}
-            alt={product.name}
-            onError={(event) => {
-              event.currentTarget.src =
-                'https://placehold.co/800x900/f1eee7/5f665f?text=Image+unavailable'
-            }}
-          />
-        </Link>
+        {product.externalUrl ? (
+          <a href={product.externalUrl} target="_blank" rel="noreferrer">{productImage}</a>
+        ) : (
+          <Link to={`/products/${product.id}`}>{productImage}</Link>
+        )}
 
         {!available && (
           <span className="sold-badge">
@@ -108,11 +118,7 @@ export default function ProductCard({
         </span>
 
         <h3>
-          <Link
-            to={`/products/${product.id}`}
-          >
-            {product.name}
-          </Link>
+          {productName}
         </h3>
 
         {product.brand && (

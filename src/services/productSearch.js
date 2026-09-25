@@ -16,6 +16,14 @@ export async function searchProducts(query) {
     return []
   }
 
-  // Live product search will be connected here.
-  return []
+  const response = await fetch(
+    `/api/products?q=${encodeURIComponent(cleanQuery)}`
+  )
+  const data = await response.json()
+
+  if (!response.ok) {
+    throw new Error(data.error || 'Unable to search products')
+  }
+
+  return Array.isArray(data.products) ? data.products : []
 }
