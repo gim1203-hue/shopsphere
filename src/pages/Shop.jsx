@@ -19,10 +19,19 @@ export default function Shop() {
   ])].filter(Boolean).sort()
   const setParam = (key, value, fallback = '') => { const next = new URLSearchParams(params); value && value !== fallback ? next.set(key, value) : next.delete(key); setParams(next) }
   const filtered = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase()
+    const queryTerms = query.trim().toLowerCase().split(/\s+/).filter(Boolean)
     const result = products.filter((product) => {
-      const searchableText = [product.name, product.category, product.description, product.color, ...(product.details || [])].join(' ').toLowerCase()
-      return (category === 'All' || product.category === category) && searchableText.includes(normalizedQuery)
+      const searchableText = [
+        product.name,
+        product.category,
+        product.description,
+        product.color,
+        product.price,
+        product.rating,
+        ...(product.details || []),
+      ].join(' ').toLowerCase()
+      const matchesSearch = queryTerms.length === 0 || queryTerms.every((term) => searchableText.includes(term))
+      return (category === 'All' || product.category === category) && matchesSearch
     })
     return [...result].sort((a, b) => sort === 'price-low' ? a.price - b.price : sort === 'price-high' ? b.price - a.price : sort === 'rating' ? b.rating - a.rating : Number(b.featured) - Number(a.featured))
   }, [category, query, sort])
