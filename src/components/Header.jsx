@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { useStore } from '../context/StoreContext'
 import { useAuth } from '../context/AuthContext'
-import { products } from '../data/products'
+import { categories, products } from '../data/products'
 
 export default function Header() {
   const { cartCount, favorites } = useStore()
@@ -30,9 +30,7 @@ export default function Header() {
           <nav className={menuOpen ? 'main-nav open' : 'main-nav'}>
             <NavLink className={navClass} to="/" onClick={() => setMenuOpen(false)}>Home</NavLink>
             <NavLink className={navClass} to="/shop" onClick={() => setMenuOpen(false)}>Shop all</NavLink>
-            <NavLink className={navClass} to="/shop?category=Home" onClick={() => setMenuOpen(false)}>Home</NavLink>
-            <NavLink className={navClass} to="/shop?category=Tech" onClick={() => setMenuOpen(false)}>Tech</NavLink>
-            <NavLink className={navClass} to="/shop?category=Style" onClick={() => setMenuOpen(false)}>Style</NavLink>
+            {categories.map((category) => <NavLink key={category.name} className={navClass} to={`/shop?category=${encodeURIComponent(category.name)}`} onClick={() => setMenuOpen(false)}>{category.name}</NavLink>)}
           </nav>
           <div className="header-actions">
             <button className="icon-button search-trigger" onClick={() => setSearchOpen(!searchOpen)} aria-label="Search"><Search /></button>
