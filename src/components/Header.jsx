@@ -8,11 +8,18 @@ import {
 } from 'lucide-react'
 
 import { useState } from 'react'
-import { Link, NavLink } from 'react-router-dom'
+import {
+  Link,
+  NavLink,
+  useNavigate,
+} from 'react-router-dom'
 
 import { useStore } from '../context/StoreContext'
 import { useAuth } from '../context/AuthContext'
-import { categories } from '../data/products'
+import {
+  categories,
+  products,
+} from '../data/products'
 
 export default function Header() {
   const { cartCount, favorites } = useStore()
@@ -22,10 +29,24 @@ export default function Header() {
   const [searchOpen, setSearchOpen] = useState(false)
   const [query, setQuery] = useState('')
 
-  const navClass = ({ isActive }) =>
-    isActive ? 'nav-link active' : 'nav-link'
+  const navigate = useNavigate()
 
-  const submitSearch = (event) => {
+  const searchOptions = [
+    ...new Set(
+      products.flatMap((product) => [
+        product.name,
+        product.category,
+        product.brand,
+        product.color,
+        product.description,
+        ...(product.details || []),
+      ])
+    ),
+  ]
+    .filter(Boolean)
+    .sort()
+
+  function submitSearch(event) {
     event.preventDefault()
 
     const cleanQuery = query.trim()
@@ -34,34 +55,34 @@ export default function Header() {
       return
     }
 
-    const googleSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(
-      cleanQuery
-    )}`
-
-    window.open(
-      googleSearchUrl,
-      '_blank',
-      'noopener,noreferrer'
+    navigate(
+      `/shop?q=${encodeURIComponent(cleanQuery)}`
     )
 
-    setQuery('')
     setSearchOpen(false)
     setMenuOpen(false)
   }
 
+  const navClass = ({ isActive }) =>
+    isActive
+      ? 'nav-link active'
+      : 'nav-link'
+
   return (
     <>
       <div className="announcement">
-        Free delivery on orders over $100
+        AskKhan Marketplace
         <span>•</span>
-        Easy 30-day returns
+        Search everything in our store
       </div>
 
       <header className="site-header">
         <div className="container header-inner">
           <button
             className="icon-button mobile-only"
-            onClick={() => setMenuOpen(!menuOpen)}
+            onClick={() =>
+              setMenuOpen(!menuOpen)
+            }
             aria-label="Toggle navigation"
             type="button"
           >
@@ -71,9 +92,9 @@ export default function Header() {
           <Link
             to="/"
             className="logo"
-            aria-label="ShopSphere home"
+            aria-label="AskKhan home"
           >
-            shop<span>sphere</span><i>.</i>
+            Ask<span>Khan</span><i>.</i>
           </Link>
 
           <nav
@@ -86,7 +107,9 @@ export default function Header() {
             <NavLink
               className={navClass}
               to="/"
-              onClick={() => setMenuOpen(false)}
+              onClick={() =>
+                setMenuOpen(false)
+              }
             >
               Home
             </NavLink>
@@ -94,9 +117,11 @@ export default function Header() {
             <NavLink
               className={navClass}
               to="/shop"
-              onClick={() => setMenuOpen(false)}
+              onClick={() =>
+                setMenuOpen(false)
+              }
             >
-              Shop all
+              Shop All
             </NavLink>
 
             {categories.map((category) => (
@@ -106,7 +131,9 @@ export default function Header() {
                 to={`/shop?category=${encodeURIComponent(
                   category.name
                 )}`}
-                onClick={() => setMenuOpen(false)}
+                onClick={() =>
+                  setMenuOpen(false)
+                }
               >
                 {category.name}
               </NavLink>
@@ -119,7 +146,7 @@ export default function Header() {
               onClick={() =>
                 setSearchOpen(!searchOpen)
               }
-              aria-label="Search the web"
+              aria-label="Search AskKhan"
               type="button"
             >
               <Search />
@@ -127,7 +154,11 @@ export default function Header() {
 
             <Link
               className="icon-button"
-              to={user ? '/account' : '/login'}
+              to={
+                user
+                  ? '/account'
+                  : '/login'
+              }
               aria-label={
                 user
                   ? 'My account'
@@ -176,17 +207,29 @@ export default function Header() {
               <Search />
 
               <input
+                list="askkhan-search-options"
                 autoFocus
                 value={query}
                 onChange={(event) =>
                   setQuery(event.target.value)
                 }
-                placeholder="Search anything on the web…"
-                aria-label="Search the web"
+                placeholder="Search AskKhan products, categories, brands..."
+                aria-label="Search AskKhan"
               />
 
+              <datalist id="askkhan-search-options">
+                {searchOptions.map(
+                  (option) => (
+                    <option
+                      key={option}
+                      value={option}
+                    />
+                  )
+                )}
+              </datalist>
+
               <button type="submit">
-                Search Web
+                Search
               </button>
             </div>
           </form>
