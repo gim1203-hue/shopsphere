@@ -1,16 +1,21 @@
-import { createClient } from '@supabase/supabase-js'
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyBRoes7-jeT_zDWEpMbl8b0cXSDXYmmO9E",
+  authDomain: "shopsphere-54234.firebaseapp.com",
+  projectId: "shopsphere-54234",
+  storageBucket: "shopsphere-54234.firebasestorage.app",
+  messagingSenderId: "948561170235",
+  appId: "1:948561170235:web:da7452d11d9488d41eb11e",
+  measurementId: "G-PFHEP96K91"
+};
 
-export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseKey)
-
-export const supabase = isSupabaseConfigured
-  ? createClient(supabaseUrl, supabaseKey, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: true,
-      },
-    })
-  : null
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
