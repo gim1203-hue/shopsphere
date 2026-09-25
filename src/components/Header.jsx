@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { useStore } from '../context/StoreContext'
 import { useAuth } from '../context/AuthContext'
+import { products } from '../data/products'
 
 export default function Header() {
   const { cartCount, favorites } = useStore()
@@ -11,6 +12,7 @@ export default function Header() {
   const [searchOpen, setSearchOpen] = useState(false)
   const [query, setQuery] = useState('')
   const navigate = useNavigate()
+  const searchOptions = [...new Set(products.flatMap((product) => [product.name, product.category, product.color, ...(product.details || [])]))].filter(Boolean).sort()
   const submitSearch = (event) => {
     event.preventDefault()
     if (query.trim()) navigate(`/shop?q=${encodeURIComponent(query.trim())}`)
@@ -39,7 +41,7 @@ export default function Header() {
             <Link className="icon-button" to="/cart" aria-label={`Cart, ${cartCount} items`}><ShoppingBag />{cartCount > 0 && <span className="count-badge">{cartCount}</span>}</Link>
           </div>
         </div>
-        {searchOpen && <form className="header-search" onSubmit={submitSearch}><div className="container"><Search /><input autoFocus value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search thoughtful goods…" aria-label="Search products" /><button type="submit">Search</button></div></form>}
+        {searchOpen && <form className="header-search" onSubmit={submitSearch}><div className="container"><Search /><input list="header-search-options" autoFocus value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search thoughtful goods…" aria-label="Search products" /><datalist id="header-search-options">{searchOptions.map((option) => <option key={option} value={option} />)}</datalist><button type="submit">Search</button></div></form>}
       </header>
     </>
   )
