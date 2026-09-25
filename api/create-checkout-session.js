@@ -77,7 +77,7 @@ export default async function handler(request, response) {
           },
         },
       }],
-      automatic_tax: { enabled: true },
+      automatic_tax: { enabled: false },
       customer_creation: 'always',
       allow_promotion_codes: true,
       success_url: `${siteUrl}/order-success?session_id={CHECKOUT_SESSION_ID}`,

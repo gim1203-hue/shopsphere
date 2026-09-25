@@ -20,15 +20,30 @@ export default function ProductCard({
   const saved =
     favorites.includes(product.id)
 
+  // Supplier/source cost
   const sourcePrice = Number(
     product.sourcePrice ??
       product.price ??
       0
   )
 
-  const askKhanPrice =
+  // Customer price = source price + your Ask Khan markup
+  const askKhanPrice = Number(
     product.askKhanPrice ??
-    getAskKhanPrice(sourcePrice)
+      getAskKhanPrice(sourcePrice)
+  )
+
+  // Genuine MSRP/list/original price only
+  const compareAtPrice = Number(
+    product.compareAtPrice ??
+      product.originalPrice ??
+      product.listPrice ??
+      product.msrp ??
+      0
+  )
+
+  const showCompareAtPrice =
+    compareAtPrice > askKhanPrice
 
   const available =
     product.externalUrl && !product.checkoutToken
@@ -41,6 +56,7 @@ export default function ProductCard({
     ...product,
     sourcePrice,
     price: askKhanPrice,
+    askKhanPrice,
   }
 
   const productImage = (
@@ -55,18 +71,22 @@ export default function ProductCard({
   )
 
   const productName = product.externalUrl ? (
-    <a href={product.externalUrl} target="_blank" rel="noreferrer">{product.name}</a>
+    <span>{product.name}</span>
   ) : (
-    <Link to={`/products/${product.id}`}>{product.name}</Link>
+    <Link to={`/products/${product.id}`}>
+      {product.name}
+    </Link>
   )
 
   return (
     <article className="product-card">
       <div className="product-image-wrap">
         {product.externalUrl ? (
-          <a href={product.externalUrl} target="_blank" rel="noreferrer">{productImage}</a>
+          productImage
         ) : (
-          <Link to={`/products/${product.id}`}>{productImage}</Link>
+          <Link to={`/products/${product.id}`}>
+            {productImage}
+          </Link>
         )}
 
         {!available && (
@@ -123,26 +143,16 @@ export default function ProductCard({
           {productName}
         </h3>
 
-        {product.brand && (
-          <small>
-            {product.brand}
-          </small>
-        )}
-
-        <div>
-          <strong>
-            {formatCurrency(
-              askKhanPrice
-            )}
-          </strong>
-
-          {sourcePrice > 0 && (
-            <del>
-              {formatCurrency(
-                sourcePrice
-              )}
+        <div className="product-price-row">
+          {showCompareAtPrice && (
+            <del className="original-price">
+              {formatCurrency(compareAtPrice)}
             </del>
           )}
+
+          <strong className="ask-khan-price">
+            {formatCurrency(askKhanPrice)}
+          </strong>
 
           {product.rating ? (
             <small>
