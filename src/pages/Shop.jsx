@@ -13,7 +13,11 @@ export default function Shop() {
   const sort = params.get('sort') || 'featured'
   const setParam = (key, value, fallback = '') => { const next = new URLSearchParams(params); value && value !== fallback ? next.set(key, value) : next.delete(key); setParams(next) }
   const filtered = useMemo(() => {
-    const result = products.filter((product) => (category === 'All' || product.category === category) && (product.name + product.description).toLowerCase().includes(query.toLowerCase()))
+    const normalizedQuery = query.trim().toLowerCase()
+    const result = products.filter((product) => {
+      const searchableText = [product.name, product.category, product.description, product.color, ...(product.details || [])].join(' ').toLowerCase()
+      return (category === 'All' || product.category === category) && searchableText.includes(normalizedQuery)
+    })
     return [...result].sort((a, b) => sort === 'price-low' ? a.price - b.price : sort === 'price-high' ? b.price - a.price : sort === 'rating' ? b.rating - a.rating : Number(b.featured) - Number(a.featured))
   }, [category, query, sort])
 
