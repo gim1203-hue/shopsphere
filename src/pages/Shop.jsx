@@ -31,6 +31,8 @@ export default function Shop() {
   ] = useState(false)
 
   const [liveProducts, setLiveProducts] = useState([])
+  const [nextLiveStart, setNextLiveStart] = useState(null)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [searching, setSearching] = useState(false)
   const [searchMessage, setSearchMessage] = useState('')
 
@@ -45,9 +47,11 @@ export default function Shop() {
 
   useEffect(() => {
     const cleanQuery = query.trim()
+    const shouldSearch = cleanQuery.length >= 2 || category !== 'All'
 
-    if (cleanQuery.length < 2) {
+    if (!shouldSearch) {
       setLiveProducts([])
+      setNextLiveStart(null)
       setSearching(false)
       setSearchMessage('')
       return undefined
@@ -59,11 +63,15 @@ export default function Shop() {
       setSearchMessage('')
 
       try {
-        const results = await searchProducts(cleanQuery)
-        if (!cancelled) setLiveProducts(results)
+        const results = await searchProducts(cleanQuery, { category })
+        if (!cancelled) {
+          setLiveProducts(results.products)
+          setNextLiveStart(results.nextStart)
+        }
       } catch (error) {
         if (!cancelled) {
           setLiveProducts([])
+          setNextLiveStart(null)
           setSearchMessage(error.message)
         }
       } finally {
@@ -75,7 +83,28 @@ export default function Shop() {
       cancelled = true
       window.clearTimeout(timer)
     }
-  }, [query])
+  }, [category, query])
+
+  async function loadMoreLiveProducts() {
+    if (nextLiveStart === null || loadingMore) return
+    setLoadingMore(true)
+    setSearchMessage('')
+    try {
+      const results = await searchProducts(query.trim(), {
+        category,
+        start: nextLiveStart,
+      })
+      setLiveProducts((current) => {
+        const seenIds = new Set(current.map((product) => product.id))
+        return [...current, ...results.products.filter((product) => !seenIds.has(product.id))]
+      })
+      setNextLiveStart(results.nextStart)
+    } catch (error) {
+      setSearchMessage(error.message)
+    } finally {
+      setLoadingMore(false)
+    }
+  }
 
   const categories =
     useMemo(() => {
@@ -232,17 +261,25 @@ export default function Shop() {
     ])
 
   const displayedProducts = useMemo(() => {
-    const combined = query.trim().length >= 2
+    const combined = query.trim().length >= 2 || category !== 'All'
       ? [...filtered, ...liveProducts]
       : filtered
+    const seenProducts = new Set()
+    const uniqueProducts = combined.filter((product) => {
+      const normalizedName = normalize(product.name)
+      const key = product.externalUrl || normalizedName
+      if (seenProducts.has(key)) return false
+      seenProducts.add(key)
+      return true
+    })
 
-    return [...combined].sort((a, b) => {
+    return [...uniqueProducts].sort((a, b) => {
       if (sort === 'price-low') return Number(a.price ?? a.sourcePrice) - Number(b.price ?? b.sourcePrice)
       if (sort === 'price-high') return Number(b.price ?? b.sourcePrice) - Number(a.price ?? a.sourcePrice)
       if (sort === 'rating') return Number(b.rating || 0) - Number(a.rating || 0)
       return Number(b.featured) - Number(a.featured)
     })
-  }, [filtered, liveProducts, query, sort])
+  }, [category, filtered, liveProducts, query, sort])
 
   return (
     <>
@@ -395,8 +432,9 @@ export default function Shop() {
             </select>
           </div>
 
-          {searching && <p className="search-status">Searching the marketplace…</p>}
+          {searching && <p className="search-status">Searching {category === 'All' ? 'the marketplace' : category}…</p>}
           {searchMessage && <p className="search-status search-error">{searchMessage}</p>}
+          {category !== 'All' && !searching && !searchMessage && <p className="search-status">{displayedProducts.length} {category} results loaded{nextLiveStart !== null ? ' · more available below' : ''}</p>}
 
           {displayedProducts.length ? (
             <div className="product-grid shop-grid">
@@ -432,6 +470,7 @@ export default function Shop() {
               </button>
             </div>
           )}
+          {nextLiveStart !== null && <button type="button" className="button dark shop-load-more" disabled={loadingMore || searching} onClick={loadMoreLiveProducts}>{loadingMore ? 'Loading products…' : `Load 20 more ${category === 'All' ? 'results' : category}`}</button>}
         </div>
       </section>
     </>

@@ -1,23 +1,19 @@
-/*
-  AskKhan live product search service.
+// Keep provider credentials on the server; browser requests go through the API route.
 
-  IMPORTANT:
-  We will connect this to a real shopping/product
-  search backend next.
-
-  Do not put a private API key directly in this file
-  because this React code runs in the customer's browser.
-*/
-
-export async function searchProducts(query) {
+export async function searchProducts(query, { category = 'All', start = 0 } = {}) {
   const cleanQuery = query.trim()
 
-  if (!cleanQuery) {
+  if (!cleanQuery && category === 'All') {
     return []
   }
 
+  const params = new URLSearchParams({
+    q: cleanQuery,
+    category,
+    start: String(start),
+  })
   const response = await fetch(
-    `/api/products?q=${encodeURIComponent(cleanQuery)}`
+    `/api/products?${params}`
   )
   const data = await response.json()
 
@@ -25,5 +21,8 @@ export async function searchProducts(query) {
     throw new Error(data.error || 'Unable to search products')
   }
 
-  return Array.isArray(data.products) ? data.products : []
+  return {
+    products: Array.isArray(data.products) ? data.products : [],
+    nextStart: Number.isInteger(data.nextStart) ? data.nextStart : null,
+  }
 }

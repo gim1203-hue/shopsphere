@@ -9,9 +9,12 @@ export default async function handler(request, response) {
   }
 
   const query = String(request.query.q || '').trim().slice(0, 120)
+  const category = String(request.query.category || 'All').trim().slice(0, 80)
+  const start = Math.max(0, Math.min(Math.floor(Number(request.query.start) || 0), 980))
+  const searchTerm = [query, category !== 'All' ? category : ''].filter(Boolean).join(' ')
 
-  if (query.length < 2) {
-    return response.status(400).json({ error: 'Enter at least two characters' })
+  if (searchTerm.length < 2) {
+    return response.status(400).json({ error: 'Choose a category or enter at least two characters' })
   }
 
   const apiKey = process.env.SERPAPI_KEY
@@ -22,7 +25,8 @@ export default async function handler(request, response) {
 
   const url = new URL('https://serpapi.com/search.json')
   url.searchParams.set('engine', 'google_shopping')
-  url.searchParams.set('q', query)
+  url.searchParams.set('q', searchTerm)
+  url.searchParams.set('start', String(start))
   url.searchParams.set('api_key', apiKey)
   url.searchParams.set('gl', 'us')
   url.searchParams.set('hl', 'en')
@@ -35,10 +39,11 @@ export default async function handler(request, response) {
       throw new Error(data.error || 'Product provider request failed')
     }
 
-    const products = (data.shopping_results || []).slice(0, 24).map((item, index) => ({
-      id: `live-${item.product_id || item.position || index}`,
+    const results = data.shopping_results || []
+    const products = results.map((item, index) => ({
+      id: `live-${item.product_id || item.position || start + index}`,
       name: item.title || 'Marketplace product',
-      category: 'Marketplace',
+      category: category === 'All' ? 'Marketplace' : category,
       brand: item.source || 'Online retailer',
       sourcePrice: Number(item.extracted_price || 0),
       rating: Number(item.rating || 0),
@@ -49,12 +54,17 @@ export default async function handler(request, response) {
       featured: false,
       description: item.snippet || `Available from ${item.source || 'an online retailer'}.`,
       details: ['Live marketplace result', item.delivery].filter(Boolean),
-      tags: [query, item.source, 'live product'].filter(Boolean),
+      tags: [query, category, item.source, 'live product'].filter(Boolean),
     })).filter((item) => item.name && item.image && item.sourcePrice > 0)
       .map((item) => ({ ...item, checkoutToken: signProduct(item) }))
 
     response.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=600')
-    return response.status(200).json({ products })
+    return response.status(200).json({
+      products,
+      nextStart: data.serpapi_pagination?.next || data.serp_pagination?.next
+        ? start + results.length
+        : null,
+    })
   } catch (error) {
     console.error('SerpApi product search failed:', error.message)
     await recordErrorReport({ source: 'product-search', message: error.message }).catch(() => {})
