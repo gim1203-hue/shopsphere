@@ -11,17 +11,18 @@ import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import ProductCard from '../components/ProductCard'
 import { useStore } from '../context/StoreContext'
-import { products } from '../data/products'
+import { useCatalog } from '../context/CatalogContext'
 import { formatCurrency } from '../utils/format'
 import { getAskKhanPrice } from '../utils/pricing'
 import NotFound from './NotFound'
 
 export default function ProductDetails() {
   const { productId } = useParams()
+  const { products } = useCatalog()
 
   const product = products.find(
     (item) =>
-      item.id === Number(productId)
+      String(item.id) === productId
   )
 
   const [quantity, setQuantity] =

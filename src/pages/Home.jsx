@@ -2,9 +2,11 @@ import { ArrowRight, PackageCheck, RefreshCcw, Sparkles } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import heroImage from '../assets/shopsphere-hero.png'
 import ProductCard from '../components/ProductCard'
-import { categories, products } from '../data/products'
+import { categories } from '../data/products'
+import { useCatalog } from '../context/CatalogContext'
 
 export default function Home() {
+  const { products } = useCatalog()
   const featured = products.filter((product) => product.featured)
   return (
     <>

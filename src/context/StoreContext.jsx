@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react'
-import { products } from '../data/products'
+import { useAuth } from './AuthContext'
+import { useCatalog } from './CatalogContext'
 
 const StoreContext = createContext(null)
 
@@ -8,6 +9,8 @@ const readSaved = (key, fallback) => {
 }
 
 export function StoreProvider({ children }) {
+  const { session } = useAuth()
+  const { products } = useCatalog()
   const [cart, setCart] = useState(() => readSaved('shopsphere-cart', []))
   const [favorites, setFavorites] = useState(() => readSaved('shopsphere-favorites', []))
   const [notice, setNotice] = useState('')
@@ -19,21 +22,68 @@ export function StoreProvider({ children }) {
     localStorage.setItem('shopsphere-favorites', JSON.stringify(favorites))
   }, [favorites])
   useEffect(() => {
+    if (!session) return undefined
+    session.getIdToken()
+      .then((token) => fetch('/api/customer-cart', {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          items: cart.map(({ id, name, quantity, image }) => ({ id, name, quantity, image })),
+        }),
+      }))
+      .catch(() => {})
+  }, [cart, session])
+  useEffect(() => {
     if (!notice) return undefined
     const timer = setTimeout(() => setNotice(''), 2400)
     return () => clearTimeout(timer)
   }, [notice])
 
-  const addToCart = (product, quantity = 1) => {
-    if (!product.stock) return
-    setCart((current) => {
-      const existing = current.find((item) => item.id === product.id)
-      return existing
-        ? current.map((item) => item.id === product.id ? { ...item, quantity: Math.min(item.quantity + quantity, product.stock) } : item)
-        : [...current, { ...product, quantity: Math.min(quantity, product.stock) }]
-    })
-    setNotice(`${product.name} added to your bag`)
-  }
+const addToCart = (product, quantity = 1) => {
+  const stock =
+    product.stock === undefined
+      ? 10
+      : Math.max(0, Number(product.stock))
+
+  if (stock <= 0) return
+
+  setCart((current) => {
+    const existing = current.find(
+      (item) => String(item.id) === String(product.id)
+    )
+
+    if (!existing) {
+      return [
+        ...current,
+        {
+          ...product,
+          quantity: Math.min(quantity, stock),
+        },
+      ]
+    }
+
+    return current.map((item) =>
+      String(item.id) === String(product.id)
+        ? {
+            ...item,
+            ...product,
+            checkoutToken:
+              product.checkoutToken ??
+              item.checkoutToken,
+            quantity: Math.min(
+              item.quantity + quantity,
+              stock
+            ),
+          }
+        : item
+    )
+  })
+
+  setNotice(`${product.name} added to your bag`)
+}
 
   const updateQuantity = (id, quantity) => setCart((current) => current.map((item) => item.id === id ? { ...item, quantity: Math.max(1, Math.min(quantity, item.stock)) } : item))
   const removeFromCart = (id) => setCart((current) => current.filter((item) => item.id !== id))
@@ -41,7 +91,7 @@ export function StoreProvider({ children }) {
   const toggleFavorite = (id) => {
     const product = products.find((item) => item.id === id)
     setFavorites((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id])
-    setNotice(favorites.includes(id) ? `${product.name} removed from favorites` : `${product.name} saved to favorites`)
+    setNotice(favorites.includes(id) ? `${product?.name || 'Product'} removed from favorites` : `${product?.name || 'Product'} saved to favorites`)
   }
 
   const cartCount = cart.reduce((total, item) => total + item.quantity, 0)

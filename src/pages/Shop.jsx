@@ -16,10 +16,12 @@ import {
 
 import PageIntro from '../components/PageIntro'
 import ProductCard from '../components/ProductCard'
-import { products } from '../data/products'
+import { catalogCategories } from '../data/products'
+import { useCatalog } from '../context/CatalogContext'
 import { searchProducts } from '../services/productSearch'
 
 export default function Shop() {
+  const { products } = useCatalog()
   const [params, setParams] =
     useSearchParams()
 
@@ -79,15 +81,13 @@ export default function Shop() {
     useMemo(() => {
       return [
         ...new Set(
-          products
-            .map(
-              (product) =>
-                product.category
-            )
-            .filter(Boolean)
+          [
+            ...products.map((product) => product.category),
+            ...catalogCategories,
+          ].filter(Boolean)
         ),
       ].sort()
-    }, [])
+    }, [products])
 
   const searchOptions =
     useMemo(() => {
@@ -110,7 +110,7 @@ export default function Shop() {
       ]
         .filter(Boolean)
         .sort()
-    }, [])
+    }, [products])
 
   function setParam(
     key,
@@ -226,6 +226,7 @@ export default function Shop() {
       )
     }, [
       category,
+      products,
       query,
       sort,
     ])

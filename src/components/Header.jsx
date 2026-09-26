@@ -2,12 +2,13 @@ import {
   Heart,
   Menu,
   Search,
+  Settings,
   ShoppingBag,
   UserRound,
   X,
 } from 'lucide-react'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Link,
   NavLink,
@@ -16,20 +17,37 @@ import {
 
 import { useStore } from '../context/StoreContext'
 import { useAuth } from '../context/AuthContext'
-import {
-  categories,
-  products,
-} from '../data/products'
+import { categories } from '../data/products'
+import { useCatalog } from '../context/CatalogContext'
 
 export default function Header() {
   const { cartCount, favorites } = useStore()
-  const { user } = useAuth()
+  const { user, session } = useAuth()
+  const { products } = useCatalog()
 
   const [menuOpen, setMenuOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [query, setQuery] = useState('')
+  const [isAdmin, setIsAdmin] = useState(false)
 
   const navigate = useNavigate()
+
+  useEffect(() => {
+    let active = true
+    if (!session) {
+      setIsAdmin(false)
+      return undefined
+    }
+    session.getIdToken()
+      .then((token) => fetch('/api/admin-access', { headers: { Authorization: `Bearer ${token}` } }))
+      .then((response) => {
+        if (active) setIsAdmin(response.ok)
+      })
+      .catch(() => {
+        if (active) setIsAdmin(false)
+      })
+    return () => { active = false }
+  }, [session])
 
   const searchOptions = [
     ...new Set(
@@ -160,6 +178,8 @@ export default function Header() {
             >
               <UserRound />
             </Link>
+
+            {isAdmin && <Link className="icon-button" to="/admin" aria-label="Store management" title="Store management"><Settings /></Link>}
 
             <Link
               className="icon-button"

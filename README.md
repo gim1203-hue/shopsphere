@@ -46,6 +46,19 @@ VITE_FIREBASE_APP_ID=your-app-id
 
 For GitHub Pages, create repository secrets with those same six names. Firebase web configuration values are public client settings; do not place private server credentials in the frontend.
 
+## Configure store administration
+
+The private admin page is at `/#/admin`. The API routes require a Vercel deployment; GitHub Pages cannot run these server functions. Create a Firestore database in the same Firebase project, then configure these server-only environment variables in Vercel:
+
+- `FIREBASE_SERVICE_ACCOUNT_JSON`: the Firebase service-account JSON from Project settings → Service accounts. Keep this private and never prefix it with `VITE_`.
+- `ADMIN_UIDS`: comma-separated Firebase Auth UIDs allowed to manage the store. Find your UID in Firebase Authentication after creating your owner account. A normal signup never grants admin access.
+- `STRIPE_SECRET_KEY`: the server-side Stripe secret key. The admin page displays recent Checkout sessions and can issue full refunds; Stripe remains the financial record.
+- `RESEND_API_KEY`, `FROM_EMAIL`, and `SUPPORT_REPLY_TO`: verified Resend sender and support reply address for one-to-one customer email.
+
+Copy the server variable names from `.env.example`, add values under the Vercel project environment settings, and redeploy. The dashboard synchronizes carts for signed-in customers; guest carts remain in that guest's browser. Email replies are delivered to `SUPPORT_REPLY_TO`, not displayed as inbound chat in the dashboard. Client and API errors are recorded in Firestore and can be marked resolved in the admin page.
+
+Admin product edits are stored in Firestore and used by the storefront and checkout. Existing static products remain available as the initial catalog. Store customer data and payment information securely; never expose the service-account JSON, Stripe secret, or Resend key to browser code.
+
 ## Project structure
 
 ```text
@@ -60,11 +73,11 @@ src/
 
 ## Data and checkout
 
-Product information is realistic mock data, not a live database. Checkout is a portfolio demonstration and does not process real payments.
+The initial product catalog is bundled sample data. The app can use Firestore for admin-managed catalog items and Stripe Checkout for real payment sessions when the server environment is configured. Without those server credentials, the management API is unavailable.
 
 ## Future improvements
 
-Authentication, a product API, inventory management, customer reviews, order history, and Stripe checkout.
+Supplier feeds, inventory synchronization, inbound email conversations, and a full order-management workflow.
 
 ## Portfolio summary
 

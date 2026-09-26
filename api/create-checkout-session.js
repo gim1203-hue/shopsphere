@@ -1,5 +1,8 @@
 import Stripe from 'stripe'
 import { products } from '../src/data/products.js'
+import { loadCatalog } from './_lib/catalog.js'
+import { getFirebaseServices } from './_lib/firebaseAdmin.js'
+import { recordErrorReport } from './_lib/firebaseAdmin.js'
 import { verifyProductToken } from './_lib/productToken.js'
 
 const stripe = process.env.STRIPE_SECRET_KEY
@@ -8,9 +11,9 @@ const stripe = process.env.STRIPE_SECRET_KEY
 
 const toCents = (amount) => Math.round(Number(amount) * 100)
 
-function resolveCartItem(item) {
+function resolveCartItem(item, catalog) {
   const quantity = Math.max(1, Math.min(Number(item.quantity) || 1, 10))
-  const catalogProduct = products.find((product) => String(product.id) === String(item.id))
+  const catalogProduct = catalog.find((product) => String(product.id) === String(item.id))
 
   if (catalogProduct) {
     return {
@@ -41,7 +44,17 @@ export default async function handler(request, response) {
   if (!stripe) return response.status(503).json({ error: 'Stripe is not configured' })
 
   const cart = Array.isArray(request.body?.cart) ? request.body.cart.slice(0, 50) : []
-  const resolved = cart.map(resolveCartItem)
+  let catalog = products
+  if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+    try {
+      const { db } = getFirebaseServices()
+      catalog = await loadCatalog(db)
+    } catch (error) {
+      await recordErrorReport({ source: 'checkout-catalog', message: error.message }).catch(() => {})
+      return response.status(503).json({ error: 'The product catalog is temporarily unavailable' })
+    }
+  }
+  const resolved = cart.map((item) => resolveCartItem(item, catalog))
 
   if (!resolved.length || resolved.some((item) => !item || item.unitAmount < 50)) {
     return response.status(400).json({ error: 'One or more cart items could not be verified' })
@@ -87,6 +100,7 @@ export default async function handler(request, response) {
     return response.status(200).json({ url: session.url })
   } catch (error) {
     console.error('Stripe Checkout creation failed:', error.message)
+    await recordErrorReport({ source: 'stripe-checkout', message: error.message }).catch(() => {})
     return response.status(502).json({ error: 'Unable to start secure checkout' })
   }
 }

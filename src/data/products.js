@@ -5,6 +5,27 @@ export const categories = [
   { name: 'Wellness', image: 'https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?auto=format&fit=crop&w=900&q=80' },
 ]
 
+export const catalogCategories = [
+  'Books',
+  'Kids & Baby',
+  'Clothing & Footwear',
+  'Furniture & Home',
+  'Electronics & Computers',
+  'Toys & Games',
+  'Rugs & Decor',
+  'Tools & Hardware',
+  'Construction Materials',
+  'Health & OTC Medicines',
+  'Beauty & Personal Care',
+  'Sports & Outdoors',
+  'Garden & Patio',
+  'Automotive',
+  'Food & Grocery',
+  'Pet Supplies',
+  'Office & School',
+  'Travel & Luggage',
+]
+
 const baseProducts = [
   {
     id: 1, name: 'Arc Lounge Chair', category: 'Home', price: 649, originalPrice: 760, rating: 4.9, reviews: 128, stock: 7, featured: true,

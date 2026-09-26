@@ -1,5 +1,6 @@
 const ALLOWED_METHODS = new Set(['GET'])
 import { signProduct } from './_lib/productToken.js'
+import { recordErrorReport } from './_lib/firebaseAdmin.js'
 
 export default async function handler(request, response) {
   if (!ALLOWED_METHODS.has(request.method)) {
@@ -56,6 +57,7 @@ export default async function handler(request, response) {
     return response.status(200).json({ products })
   } catch (error) {
     console.error('SerpApi product search failed:', error.message)
+    await recordErrorReport({ source: 'product-search', message: error.message }).catch(() => {})
     return response.status(502).json({ error: 'Live product search is temporarily unavailable' })
   }
 }
