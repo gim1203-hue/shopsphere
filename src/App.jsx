@@ -27,12 +27,15 @@ function ScrollToTop() {
 }
 
 export default function App() {
+  const { pathname } = useLocation()
+  const isAdminRoute = pathname === '/admin'
+
   return (
-    <div className="app-shell">
+    <div className={`app-shell${isAdminRoute ? ' admin-app-shell' : ''}`}>
       <ErrorReporter />
       <ScrollToTop />
-      <Header />
-      <main>
+      {!isAdminRoute && <Header />}
+      <main className={isAdminRoute ? 'admin-main' : undefined}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/shop" element={<Shop />} />
@@ -49,7 +52,7 @@ export default function App() {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
-      <Footer />
+      {!isAdminRoute && <Footer />}
     </div>
   )
 }
