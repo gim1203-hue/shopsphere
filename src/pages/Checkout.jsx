@@ -3,20 +3,27 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useStore } from '../context/StoreContext'
 import { formatCurrency } from '../utils/format'
+import { useAuth } from '../context/AuthContext'
 
 export default function Checkout() {
   const { cart, subtotal } = useStore()
+  const { session } = useAuth()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const shipping = subtotal >= 100 ? 0 : 9
 
   async function beginCheckout() {
+    if (!session) {
+      setError('Sign in before checkout so your order and shipping history can be saved.')
+      return
+    }
     setLoading(true)
     setError('')
     try {
+      const token = await session.getIdToken()
       const response = await fetch('/api/create-checkout-session', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ cart: cart.map(({ id, quantity, checkoutToken }) => ({ id, quantity, checkoutToken })) }),
       })
       const data = await response.json()
@@ -37,6 +44,7 @@ export default function Checkout() {
         <div className="checkout-form">
           <span className="eyebrow">Secure payment</span><h1>Checkout.</h1>
           <fieldset><legend>Payment and delivery</legend><p className="demo-note">Stripe securely collects your email, delivery address, and payment information. AskKhan never receives or stores your card number.</p></fieldset>
+          {!session && <p className="demo-note">Please <Link to="/login">sign in</Link> before paying. This keeps your order, shipment dates, and delivery address in your account.</p>}
           {error && <p className="checkout-error" role="alert">{error}</p>}
           <button className="button dark place-order" type="button" onClick={beginCheckout} disabled={loading}><LockKeyhole size={16} /> {loading ? 'Opening secure checkout…' : `Pay securely · ${formatCurrency(subtotal + shipping)}`}</button>
         </div>

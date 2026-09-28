@@ -8,6 +8,7 @@ import ErrorBoundary from './components/ErrorBoundary'
 import App from './App'
 import './index.css'
 import './auth.css'
+import './account.css'
 import './admin.css'
 
 createRoot(document.getElementById('root')).render(

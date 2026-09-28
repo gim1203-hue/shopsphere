@@ -2,6 +2,7 @@ import Stripe from 'stripe'
 import { products } from '../src/data/products.js'
 import { loadCatalog } from './_lib/catalog.js'
 import { getFirebaseServices } from './_lib/firebaseAdmin.js'
+import { requireSignedInUser } from './_lib/firebaseAdmin.js'
 import { recordErrorReport } from './_lib/firebaseAdmin.js'
 import { verifyProductToken } from './_lib/productToken.js'
 
@@ -42,6 +43,13 @@ export default async function handler(request, response) {
   }
 
   if (!stripe) return response.status(503).json({ error: 'Stripe is not configured' })
+
+  let signedInUser
+  try {
+    signedInUser = (await requireSignedInUser(request)).user
+  } catch (error) {
+    return response.status(error.statusCode || 401).json({ error: error.message })
+  }
 
   const cart = Array.isArray(request.body?.cart) ? request.body.cart.slice(0, 50) : []
   let catalog = products
@@ -92,6 +100,9 @@ export default async function handler(request, response) {
       }],
       automatic_tax: { enabled: false },
       customer_creation: 'always',
+      customer_email: signedInUser.email || undefined,
+      client_reference_id: signedInUser.uid,
+      metadata: { userId: signedInUser.uid },
       allow_promotion_codes: true,
       success_url: `${siteUrl}/order-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${siteUrl}/checkout`,

@@ -8,7 +8,7 @@ import {
   X,
 } from 'lucide-react'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   Link,
   NavLink,
@@ -28,6 +28,7 @@ export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [query, setQuery] = useState('')
+  const [suggestionsOpen, setSuggestionsOpen] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
 
   const navigate = useNavigate()
@@ -49,21 +50,18 @@ export default function Header() {
     return () => { active = false }
   }, [session])
 
-  const searchOptions = [
-    ...new Set(
-      products.flatMap((product) => [
-        product.name,
-        product.category,
-        product.brand,
-        product.color,
-        product.description,
-        ...(product.details || []),
-        ...(product.tags || []),
-      ])
-    ),
-  ]
-    .filter(Boolean)
-    .sort()
+  const suggestions = useMemo(() => {
+    const term = query.trim().toLowerCase()
+    if (!term) return []
+    return products.filter((product) => [product.name, product.category, product.subcategory, product.brand, ...(product.tags || [])].filter(Boolean).join(' ').toLowerCase().includes(term)).slice(0, 7)
+  }, [products, query])
+
+  function chooseSuggestion(product) {
+    navigate(`/shop?q=${encodeURIComponent(product.name)}`)
+    setQuery(product.name)
+    setSuggestionsOpen(false)
+    setSearchOpen(false)
+  }
 
   function submitSearch(event) {
     event.preventDefault()
@@ -169,6 +167,17 @@ export default function Header() {
               <Search />
             </button>
 
+            <button
+              className="icon-button mobile-search-trigger"
+              onClick={() =>
+                setSearchOpen(!searchOpen)
+              }
+              aria-label="Search AskKhan"
+              type="button"
+            >
+              <Search />
+            </button>
+
             <Link
               className="icon-button"
               to={user ? '/account' : '/login'}
@@ -220,29 +229,21 @@ export default function Header() {
               <Search />
 
               <input
-                list="askkhan-search-options"
                 autoFocus
                 value={query}
-                onChange={(event) =>
-                  setQuery(event.target.value)
-                }
+                onFocus={() => setSuggestionsOpen(true)}
+                onChange={(event) => { setQuery(event.target.value); setSuggestionsOpen(true) }}
                 placeholder="Search AskKhan..."
                 aria-label="Search AskKhan"
+                aria-autocomplete="list"
+                aria-expanded={suggestionsOpen && suggestions.length > 0}
               />
-
-              <datalist id="askkhan-search-options">
-                {searchOptions.map((option) => (
-                  <option
-                    key={option}
-                    value={option}
-                  />
-                ))}
-              </datalist>
 
               <button type="submit">
                 Search
               </button>
             </div>
+            {suggestionsOpen && suggestions.length > 0 && <div className="search-suggestions container" role="listbox">{suggestions.map((product) => <button type="button" role="option" key={product.id} onClick={() => chooseSuggestion(product)}><img src={product.image} alt="" /><span><strong>{product.name}</strong><small>{product.category} · {product.brand}</small></span></button>)}</div>}
           </form>
         )}
       </header>

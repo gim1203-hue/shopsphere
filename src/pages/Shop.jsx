@@ -35,6 +35,7 @@ export default function Shop() {
   const [loadingMore, setLoadingMore] = useState(false)
   const [searching, setSearching] = useState(false)
   const [searchMessage, setSearchMessage] = useState('')
+  const [suggestionsOpen, setSuggestionsOpen] = useState(false)
 
   const query =
     params.get('q') || ''
@@ -118,28 +119,11 @@ export default function Shop() {
       ].sort()
     }, [products])
 
-  const searchOptions =
-    useMemo(() => {
-      return [
-        ...new Set(
-          products.flatMap(
-            (product) => [
-              product.name,
-              product.brand,
-              product.category,
-              product.subcategory,
-              product.color,
-              product.description,
-              ...(product.details || []),
-              ...(product.tags || []),
-              ...(product.keywords || []),
-            ]
-          )
-        ),
-      ]
-        .filter(Boolean)
-        .sort()
-    }, [products])
+  const matchingSuggestions = useMemo(() => {
+    const term = normalize(query).trim()
+    if (!term) return []
+    return products.filter((product) => normalize([product.name, product.brand, product.category, product.subcategory, ...(product.tags || [])].join(' ')).includes(term)).slice(0, 7)
+  }, [products, query])
 
   function setParam(
     key,
@@ -360,27 +344,16 @@ export default function Shop() {
               <Search size={18} />
 
               <input
-                list="shop-search-options"
                 value={query}
+                onFocus={() => setSuggestionsOpen(true)}
                 onChange={(event) =>
-                  setParam(
-                    'q',
-                    event.target.value
-                  )
+                  { setParam('q', event.target.value); setSuggestionsOpen(true) }
                 }
                 placeholder="Search AskKhan..."
+                aria-autocomplete="list"
+                aria-expanded={suggestionsOpen && matchingSuggestions.length > 0}
               />
-
-              <datalist id="shop-search-options">
-                {searchOptions.map(
-                  (option) => (
-                    <option
-                      key={option}
-                      value={option}
-                    />
-                  )
-                )}
-              </datalist>
+              {suggestionsOpen && matchingSuggestions.length > 0 && <div className="shop-search-suggestions search-suggestions" role="listbox">{matchingSuggestions.map((product) => <button type="button" role="option" key={product.id} onClick={() => { setParam('q', product.name); setSuggestionsOpen(false) }}><img src={product.image} alt="" /><span><strong>{product.name}</strong><small>{product.category} · {product.brand}</small></span></button>)}</div>}
             </label>
 
             <button

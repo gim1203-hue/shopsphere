@@ -1,20 +1,23 @@
-import { ArrowUpRight, Instagram, Mail } from 'lucide-react'
+import { ArrowUpRight, Mail } from 'lucide-react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 
 export default function Footer() {
+  const [subscribed, setSubscribed] = useState(false)
   return (
     <footer className="site-footer">
       <div className="container newsletter">
         <div><span className="eyebrow light">The Sunday edit</span><h2>Good things, thoughtfully sent.</h2></div>
-        <form onSubmit={(e) => e.preventDefault()}><label className="sr-only" htmlFor="newsletter">Email address</label><input id="newsletter" type="email" placeholder="Your email address" required /><button aria-label="Join newsletter"><ArrowUpRight /></button></form>
+        <form onSubmit={(event) => { event.preventDefault(); setSubscribed(true); event.currentTarget.reset() }}><label className="sr-only" htmlFor="newsletter">Email address</label><input id="newsletter" type="email" placeholder="Your email address" required /><button aria-label="Join newsletter"><ArrowUpRight /></button></form>
+        {subscribed && <span className="newsletter-success" role="status">Thanks — you’re on the list.</span>}
       </div>
       <div className="container footer-grid">
-        <div><Link className="logo footer-logo" to="/">shop<span>sphere</span><i>.</i></Link><p>Considered objects for everyday rituals.<br />Designed to be lived with and loved.</p></div>
-        <div><h3>Shop</h3><Link to="/shop">New arrivals</Link><Link to="/shop?category=Home">Home</Link><Link to="/shop?category=Tech">Tech</Link><Link to="/shop?category=Style">Style</Link></div>
-        <div><h3>About</h3><a href="#story">Our story</a><a href="mailto:hello@shopsphere.example">Contact</a><a href="#journal">Journal</a><a href="#care">Care guide</a></div>
-        <div><h3>Follow along</h3><a href="#instagram"><Instagram size={17} /> Instagram</a><a href="mailto:hello@shopsphere.example"><Mail size={17} /> Email us</a></div>
+        <div><Link className="logo footer-logo" to="/">Ask<span>Khan</span><i>.</i></Link><p>A broad marketplace for everyday goods, vehicles, business supplies, and more.</p></div>
+        <div><h3>Shop</h3><Link to="/shop">All products</Link><Link to="/shop?category=Cars%20%26%20Trucks">Cars & trucks</Link><Link to="/shop?category=Motorcycles%20%26%20Powersports">Motorcycles</Link><Link to="/shop?category=Electronics%20%26%20Computers">Electronics</Link></div>
+        <div><h3>Help</h3><Link to="/support">Merchant support</Link><Link to="/account#orders">Orders & invoices</Link><Link to="/account#addresses">Shipping addresses</Link><a href="mailto:hello@shopsphere.example">Email us</a></div>
+        <div><h3>Contact</h3><Link to="/support"><Mail size={17} /> Contact merchant</Link><a href="mailto:hello@shopsphere.example"><Mail size={17} /> Email support</a></div>
       </div>
-      <div className="container footer-bottom"><span>© {new Date().getFullYear()} ShopSphere</span><span>Privacy · Terms · Accessibility</span><span>Made with intention</span></div>
+      <div className="container footer-bottom"><span>© {new Date().getFullYear()} AskKhan</span><span><Link to="/legal/privacy">Privacy</Link> · <Link to="/legal/terms">Terms</Link> · <Link to="/legal/accessibility">Accessibility</Link> · <Link to="/legal/returns">Returns</Link></span><span>Merchant support available</span></div>
     </footer>
   )
 }

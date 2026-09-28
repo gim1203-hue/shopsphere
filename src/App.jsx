@@ -17,6 +17,8 @@ import ResetPassword from './pages/ResetPassword'
 import Admin from './pages/Admin'
 import ProtectedRoute from './components/ProtectedRoute'
 import ErrorReporter from './components/ErrorReporter'
+import Support from './pages/Support'
+import Legal from './pages/Legal'
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -48,6 +50,8 @@ export default function App() {
           <Route path="/signup" element={<Signup />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
+          <Route path="/support" element={<ProtectedRoute><Support /></ProtectedRoute>} />
+          <Route path="/legal/:document" element={<Legal />} />
           <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
