@@ -85,7 +85,11 @@ const addToCart = (product, quantity = 1) => {
   setNotice(`${product.name} added to your bag`)
 }
 
-  const updateQuantity = (id, quantity) => setCart((current) => current.map((item) => item.id === id ? { ...item, quantity: Math.max(1, Math.min(quantity, item.stock)) } : item))
+  const updateQuantity = (id, quantity) => setCart((current) => current.map((item) => {
+    if (String(item.id) !== String(id)) return item
+    const stock = Math.max(1, Number(item.stock) || 10)
+    return { ...item, quantity: Math.max(1, Math.min(quantity, stock)) }
+  }))
   const removeFromCart = (id) => setCart((current) => current.filter((item) => item.id !== id))
   const clearCart = useCallback(() => setCart([]), [])
   const toggleFavorite = (id) => {

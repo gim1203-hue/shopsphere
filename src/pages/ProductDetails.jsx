@@ -81,6 +81,8 @@ export default function ProductDetails() {
   const saved =
     favorites.includes(product.id)
 
+  const maxQuantity = Math.max(1, Number(product.stock) || 10)
+
   return (
     <>
       <section className="container product-detail">
@@ -159,6 +161,8 @@ export default function ProductDetails() {
             <div className="purchase-row">
               <div className="quantity">
                 <button
+                  type="button"
+                  disabled={quantity <= 1}
                   onClick={() =>
                     setQuantity(
                       Math.max(
@@ -167,7 +171,8 @@ export default function ProductDetails() {
                       )
                     )
                   }
-                  aria-label="Decrease"
+                  aria-label="Decrease quantity"
+                  title={quantity <= 1 ? 'Minimum quantity is 1' : 'Decrease quantity'}
                 >
                   <Minus />
                 </button>
@@ -175,15 +180,18 @@ export default function ProductDetails() {
                 <span>{quantity}</span>
 
                 <button
+                  type="button"
+                  disabled={quantity >= maxQuantity}
                   onClick={() =>
                     setQuantity(
                       Math.min(
-                        product.stock,
+                        maxQuantity,
                         quantity + 1
                       )
                     )
                   }
-                  aria-label="Increase"
+                  aria-label="Increase quantity"
+                  title={quantity >= maxQuantity ? `Maximum quantity is ${maxQuantity}` : 'Increase quantity'}
                 >
                   <Plus />
                 </button>
@@ -249,7 +257,7 @@ export default function ProductDetails() {
               <h3>Details & care</h3>
 
               <ul>
-                {product.details.map(
+                {(product.details || []).map(
                   (detail) => (
                     <li key={detail}>
                       {detail}

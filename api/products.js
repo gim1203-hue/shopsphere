@@ -50,7 +50,9 @@ export default async function handler(request, response) {
       reviews: Number(item.reviews || 0),
       image: item.thumbnail,
       externalUrl: item.product_link || item.link,
-      stock: 1,
+      // Shopping feeds rarely expose exact inventory. Allow a reasonable
+      // per-order quantity while Stripe re-validates the signed product.
+      stock: 10,
       featured: false,
       description: item.snippet || `Available from ${item.source || 'an online retailer'}.`,
       details: ['Live marketplace result', item.delivery].filter(Boolean),
