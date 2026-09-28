@@ -81,7 +81,7 @@ export default function ProductDetails() {
   const saved =
     favorites.includes(product.id)
 
-  const maxQuantity = Math.max(1, Number(product.stock) || 10)
+  const maxQuantity = product.externalUrl ? 10 : Math.max(1, Number(product.stock) || 10)
 
   return (
     <>

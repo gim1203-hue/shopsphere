@@ -44,7 +44,9 @@ export function StoreProvider({ children }) {
 
 const addToCart = (product, quantity = 1) => {
   const stock =
-    product.stock === undefined
+    product.externalUrl
+      ? 10
+      : product.stock === undefined
       ? 10
       : Math.max(0, Number(product.stock))
 
@@ -87,7 +89,7 @@ const addToCart = (product, quantity = 1) => {
 
   const updateQuantity = (id, quantity) => setCart((current) => current.map((item) => {
     if (String(item.id) !== String(id)) return item
-    const stock = Math.max(1, Number(item.stock) || 10)
+    const stock = item.externalUrl ? 10 : Math.max(1, Number(item.stock) || 10)
     return { ...item, quantity: Math.max(1, Math.min(quantity, stock)) }
   }))
   const removeFromCart = (id) => setCart((current) => current.filter((item) => item.id !== id))
