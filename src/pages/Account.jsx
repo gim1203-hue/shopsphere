@@ -40,6 +40,12 @@ export default function Account() {
     return () => { active = false }
   }, [accountFetch])
 
+  useEffect(() => {
+    if (hash === '#orders') setView('orders')
+    else if (hash === '#addresses') setView('addresses')
+    else if (hash === '#profile') setView('profile')
+  }, [hash])
+
   const chooseView = (next) => setView(next)
   const saveProfile = async (event) => { event.preventDefault(); setSaved(false); const result = await updateProfile(form); if (!result.error) { setEditing(false); setSaved(true) } }
   const saveAddress = async (event) => {
