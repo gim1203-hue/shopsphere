@@ -55,6 +55,9 @@ export default async function handler(request, response) {
       stock: 10,
       featured: false,
       description: item.snippet || `Available from ${item.source || 'an online retailer'}.`,
+      measurements: 'Exact measurements were not provided by the seller.',
+      sellerName: item.source || 'Online marketplace seller',
+      sellerContact: 'Contact through AskKhan Merchant Support',
       details: ['Live marketplace result', item.delivery].filter(Boolean),
       tags: [query, category, item.source, 'live product'].filter(Boolean),
     })).filter((item) => item.name && item.image && item.sourcePrice > 0)

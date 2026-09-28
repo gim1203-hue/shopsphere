@@ -3,7 +3,9 @@ import {
   Heart,
   Minus,
   Plus,
+  Ruler,
   ShieldCheck,
+  Store,
   Truck,
 } from 'lucide-react'
 
@@ -254,7 +256,16 @@ export default function ProductDetails() {
             </div>
 
             <div className="detail-list">
-              <h3>Details & care</h3>
+              <h3>Complete product description</h3>
+
+              <p className="full-product-description">{product.description || 'No additional description was provided by the seller.'}</p>
+
+              <div className="product-facts">
+                <div><Ruler /><span><small>Measurements / dimensions</small><strong>{product.measurements || 'Exact measurements were not provided by the seller.'}</strong></span></div>
+                <div><Store /><span><small>Seller</small><strong>{product.sellerName || product.brand || 'AskKhan Marketplace Seller'}</strong><em>{product.sellerContact || 'Contact through AskKhan Merchant Support'}</em></span></div>
+              </div>
+
+              <h3>Additional details</h3>
 
               <ul>
                 {(product.details || []).map(
@@ -266,6 +277,8 @@ export default function ProductDetails() {
                 )}
               </ul>
             </div>
+
+            <Link className="button dark contact-seller" to={`/support?type=Product+listing+problem&product=${encodeURIComponent(product.name)}&seller=${encodeURIComponent(product.sellerName || product.brand || '')}`}>Contact seller about this item</Link>
 
             {product.externalUrl && <Link className="button light-button original-listing" to={`/shop?q=${encodeURIComponent(product.category || product.name)}`}>View similar products</Link>}
           </div>

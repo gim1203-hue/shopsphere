@@ -7,7 +7,9 @@ import { useAuth } from '../context/AuthContext'
 export default function Support() {
   const { session } = useAuth()
   const [params] = useSearchParams()
-  const [form, setForm] = useState({ type: params.get('type') || 'Order help', orderNumber: params.get('order') || '', message: '' })
+  const product = params.get('product') || ''
+  const seller = params.get('seller') || ''
+  const [form, setForm] = useState({ type: params.get('type') || 'Order help', orderNumber: params.get('order') || '', message: product ? `I need help contacting the seller${seller ? ` (${seller})` : ''} about: ${product}.\n\n` : '' })
   const [working, setWorking] = useState(false)
   const [result, setResult] = useState('')
   const [error, setError] = useState('')

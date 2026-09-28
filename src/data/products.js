@@ -751,6 +751,19 @@ export const products = rawProducts.map((product) => {
 
     details: product.details ?? [],
 
+    measurements:
+      product.measurements ||
+      'Exact measurements were not provided by the seller.',
+
+    sellerName:
+      product.sellerName ||
+      product.brand ||
+      'AskKhan Marketplace Seller',
+
+    sellerContact:
+      product.sellerContact ||
+      'Contact through AskKhan Merchant Support',
+
     brand:
       product.brand ||
       'AskKhan Marketplace',

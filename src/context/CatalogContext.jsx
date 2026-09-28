@@ -40,7 +40,13 @@ function mergeProducts(
     })
   })
 
-  return [...map.values()]
+  return [...map.values()].map((product) => ({
+    ...product,
+    description: product.description || 'No additional description was provided by the seller.',
+    measurements: product.measurements || 'Exact measurements were not provided by the seller.',
+    sellerName: product.sellerName || product.brand || 'AskKhan Marketplace Seller',
+    sellerContact: product.sellerContact || 'Contact through AskKhan Merchant Support',
+  }))
 }
 
 export function CatalogProvider({

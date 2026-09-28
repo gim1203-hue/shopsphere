@@ -133,6 +133,10 @@ export default function ProductCard({
           <Link to={productLink} state={{ product }}>{product.name}</Link>
         </h3>
 
+        <p className="product-card-description">{product.description || 'No description provided.'}</p>
+
+        <div className="product-card-seller"><span>Seller: {product.sellerName || product.brand || 'Marketplace seller'}</span><span>{product.measurements || 'Measurements not provided'}</span></div>
+
         <div className="product-price-row">
           {showCompareAtPrice && (
             <del className="original-price">
