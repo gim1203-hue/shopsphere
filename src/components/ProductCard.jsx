@@ -6,7 +6,7 @@ import {
 import { Link } from 'react-router-dom'
 import { useStore } from '../context/StoreContext'
 import { formatCurrency } from '../utils/format'
-import { getAskKhanPrice } from '../utils/pricing'
+import { getProductPrice } from '../utils/pricing'
 
 export default function ProductCard({
   product,
@@ -28,10 +28,7 @@ export default function ProductCard({
   )
 
   // Customer price = source price + your Ask Khan markup
-  const askKhanPrice = Number(
-    product.askKhanPrice ??
-      getAskKhanPrice(sourcePrice)
-  )
+  const askKhanPrice = getProductPrice(product)
 
   // Genuine MSRP/list/original price only
   const compareAtPrice = Number(

@@ -1,4 +1,5 @@
 import { products as bundledProducts } from '../../src/data/products.js'
+import { getProductPrice } from '../../src/utils/pricing.js'
 
 export async function loadCatalog(db) {
   const productsById = new Map(
@@ -20,5 +21,12 @@ export async function loadCatalog(db) {
     })
   })
 
-  return [...productsById.values()]
+  return [...productsById.values()].map((product) => {
+    const customerPrice = getProductPrice(product)
+    return {
+      ...product,
+      price: customerPrice,
+      askKhanPrice: customerPrice,
+    }
+  })
 }

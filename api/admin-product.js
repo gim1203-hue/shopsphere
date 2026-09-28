@@ -1,6 +1,7 @@
 import { FieldValue } from 'firebase-admin/firestore'
 import { randomUUID } from 'node:crypto'
 import { requireAdmin, sendApiError } from './_lib/firebaseAdmin.js'
+import { getAskKhanPrice } from '../src/utils/pricing.js'
 
 export default async function handler(request, response) {
   if (request.method !== 'POST') {
@@ -36,7 +37,7 @@ export default async function handler(request, response) {
       name,
       category,
       image,
-      price: Number(price.toFixed(2)),
+      price: getAskKhanPrice(price),
       sourcePrice: Number(price.toFixed(2)),
       stock,
       description: String(input.description || '').trim().slice(0, 1500),

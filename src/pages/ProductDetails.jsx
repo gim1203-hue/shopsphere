@@ -15,7 +15,7 @@ import { Link, useLocation, useParams } from 'react-router-dom'
 import ProductCard from '../components/ProductCard'
 import { useStore } from '../context/StoreContext'
 import { useCatalog } from '../context/CatalogContext'
-import { getAskKhanPrice } from '../utils/pricing'
+import { getProductPrice } from '../utils/pricing'
 import NotFound from './NotFound'
 
 export default function ProductDetails() {
@@ -48,10 +48,7 @@ export default function ProductDetails() {
   )
 
   // Your customer price including your markup
-  const askKhanPrice = Number(
-    product.askKhanPrice ??
-      getAskKhanPrice(sourcePrice)
-  )
+  const askKhanPrice = getProductPrice(product)
 
   const cartProduct = {
     ...product,
