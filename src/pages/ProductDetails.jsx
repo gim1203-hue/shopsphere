@@ -8,7 +8,7 @@ import {
 } from 'lucide-react'
 
 import { useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useLocation, useParams } from 'react-router-dom'
 import ProductCard from '../components/ProductCard'
 import { useStore } from '../context/StoreContext'
 import { useCatalog } from '../context/CatalogContext'
@@ -18,12 +18,13 @@ import NotFound from './NotFound'
 
 export default function ProductDetails() {
   const { productId } = useParams()
+  const location = useLocation()
   const { products } = useCatalog()
 
   const product = products.find(
     (item) =>
       String(item.id) === productId
-  )
+  ) || (String(location.state?.product?.id) === productId ? location.state.product : null)
 
   const [quantity, setQuantity] =
     useState(1)
@@ -257,6 +258,8 @@ export default function ProductDetails() {
                 )}
               </ul>
             </div>
+
+            {product.externalUrl && <a className="button light-button original-listing" href={product.externalUrl} target="_blank" rel="noreferrer">View original seller listing</a>}
           </div>
         </div>
       </section>

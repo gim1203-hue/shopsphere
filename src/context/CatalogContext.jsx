@@ -1,6 +1,7 @@
 import {
   createContext,
   useContext,
+  useCallback,
   useEffect,
   useState,
 } from 'react'
@@ -50,6 +51,11 @@ export function CatalogProvider({
 
   const [loading, setLoading] =
     useState(false)
+
+  const addProducts = useCallback((newProducts) => {
+    if (!Array.isArray(newProducts) || !newProducts.length) return
+    setProducts((current) => mergeProducts(current, newProducts))
+  }, [])
 
   async function refreshCatalog() {
     setLoading(true)
@@ -126,6 +132,7 @@ export function CatalogProvider({
         products,
         loading,
         refreshCatalog,
+        addProducts,
       }}
     >
       {children}

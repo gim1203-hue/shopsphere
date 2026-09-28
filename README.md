@@ -48,7 +48,7 @@ For GitHub Pages, create repository secrets with those same six names. Firebase 
 
 ## Configure store administration
 
-The private admin page is at `/#/admin`. The API routes require a Vercel deployment; GitHub Pages cannot run these server functions. Create a Firestore database in the same Firebase project, then configure these server-only environment variables in Vercel:
+The private admin page is at `/admin`. The API routes require a Vercel deployment; GitHub Pages cannot run these server functions. Create a Firestore database in the same Firebase project, then configure these server-only environment variables in Vercel:
 
 - `FIREBASE_SERVICE_ACCOUNT_JSON`: the Firebase service-account JSON from Project settings → Service accounts. Keep this private and never prefix it with `VITE_`.
 - `ADMIN_UIDS`: comma-separated Firebase Auth UIDs allowed to manage the store. Find your UID in Firebase Authentication after creating your owner account. A normal signup never grants admin access.

@@ -21,7 +21,7 @@ import { useCatalog } from '../context/CatalogContext'
 import { searchProducts } from '../services/productSearch'
 
 export default function Shop() {
-  const { products } = useCatalog()
+  const { products, addProducts } = useCatalog()
   const [params, setParams] =
     useSearchParams()
 
@@ -67,6 +67,7 @@ export default function Shop() {
         const results = await searchProducts(cleanQuery, { category })
         if (!cancelled) {
           setLiveProducts(results.products)
+          addProducts(results.products)
           setNextLiveStart(results.nextStart)
         }
       } catch (error) {
@@ -84,7 +85,7 @@ export default function Shop() {
       cancelled = true
       window.clearTimeout(timer)
     }
-  }, [category, query])
+  }, [addProducts, category, query])
 
   async function loadMoreLiveProducts() {
     if (nextLiveStart === null || loadingMore) return
@@ -99,6 +100,7 @@ export default function Shop() {
         const seenIds = new Set(current.map((product) => product.id))
         return [...current, ...results.products.filter((product) => !seenIds.has(product.id))]
       })
+      addProducts(results.products)
       setNextLiveStart(results.nextStart)
     } catch (error) {
       setSearchMessage(error.message)

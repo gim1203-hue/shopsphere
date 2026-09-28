@@ -28,6 +28,22 @@ function ScrollToTop() {
   return null
 }
 
+function HoverLabels() {
+  useEffect(() => {
+    const applyLabels = () => {
+      document.querySelectorAll('button:not([title]), a:not([title])').forEach((element) => {
+        const label = element.getAttribute('aria-label') || element.textContent?.replace(/\s+/g, ' ').trim()
+        if (label) element.setAttribute('title', label.slice(0, 140))
+      })
+    }
+    applyLabels()
+    const observer = new MutationObserver(applyLabels)
+    observer.observe(document.body, { childList: true, subtree: true })
+    return () => observer.disconnect()
+  }, [])
+  return null
+}
+
 export default function App() {
   const { pathname } = useLocation()
   const isAdminRoute = pathname === '/admin'
@@ -36,6 +52,7 @@ export default function App() {
     <div className={`app-shell${isAdminRoute ? ' admin-app-shell' : ''}`}>
       <ErrorReporter />
       <ScrollToTop />
+      <HoverLabels />
       {!isAdminRoute && <Header />}
       <main className={isAdminRoute ? 'admin-main' : undefined}>
         <Routes>

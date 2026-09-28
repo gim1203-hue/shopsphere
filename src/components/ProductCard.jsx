@@ -70,24 +70,14 @@ export default function ProductCard({
     />
   )
 
-  const productName = product.externalUrl ? (
-    <span>{product.name}</span>
-  ) : (
-    <Link to={`/products/${product.id}`}>
-      {product.name}
-    </Link>
-  )
+  const productLink = { pathname: `/products/${product.id}` }
 
   return (
     <article className="product-card">
       <div className="product-image-wrap">
-        {product.externalUrl ? (
-          productImage
-        ) : (
-          <Link to={`/products/${product.id}`}>
-            {productImage}
-          </Link>
-        )}
+        <Link to={productLink} state={{ product }} aria-label={`View details for ${product.name}`}>
+          {productImage}
+        </Link>
 
         {!available && (
           <span className="sold-badge">
@@ -140,7 +130,7 @@ export default function ProductCard({
         </span>
 
         <h3>
-          {productName}
+          <Link to={productLink} state={{ product }}>{product.name}</Link>
         </h3>
 
         <div className="product-price-row">

@@ -1,6 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { HashRouter } from 'react-router-dom'
+import { BrowserRouter } from 'react-router-dom'
 import { StoreProvider } from './context/StoreContext'
 import { AuthProvider } from './context/AuthContext'
 import { CatalogProvider } from './context/CatalogContext'
@@ -13,8 +13,8 @@ import './admin.css'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <HashRouter>
+    <BrowserRouter>
       <ErrorBoundary><AuthProvider><CatalogProvider><StoreProvider><App /></StoreProvider></CatalogProvider></AuthProvider></ErrorBoundary>
-    </HashRouter>
+    </BrowserRouter>
   </StrictMode>,
 )
