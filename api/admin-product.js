@@ -44,6 +44,9 @@ export default async function handler(request, response) {
       measurements: String(input.measurements || '').trim().slice(0, 500) || 'Exact measurements were not provided by the seller.',
       sellerName: String(input.sellerName || '').trim().slice(0, 160) || 'AskKhan Marketplace Seller',
       sellerContact: String(input.sellerContact || '').trim().slice(0, 300) || 'Contact through AskKhan Merchant Support',
+      sellerEmail: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(input.sellerEmail || '').trim())
+        ? String(input.sellerEmail).trim().toLowerCase().slice(0, 254)
+        : '',
       featured: Boolean(input.featured),
       deleted: false,
       updatedAt: FieldValue.serverTimestamp(),

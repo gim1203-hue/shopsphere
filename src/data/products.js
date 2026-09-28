@@ -764,6 +764,8 @@ export const products = rawProducts.map((product) => {
       product.sellerContact ||
       'Contact through AskKhan Merchant Support',
 
+    sellerEmail: product.sellerEmail || '',
+
     brand:
       product.brand ||
       'AskKhan Marketplace',

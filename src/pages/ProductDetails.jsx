@@ -1,6 +1,7 @@
 import {
   ArrowLeft,
   Heart,
+  Mail,
   Minus,
   Plus,
   Ruler,
@@ -262,7 +263,7 @@ export default function ProductDetails() {
 
               <div className="product-facts">
                 <div><Ruler /><span><small>Measurements / dimensions</small><strong>{product.measurements || 'Exact measurements were not provided by the seller.'}</strong></span></div>
-                <div><Store /><span><small>Seller</small><strong>{product.sellerName || product.brand || 'AskKhan Marketplace Seller'}</strong><em>{product.sellerContact || 'Contact through AskKhan Merchant Support'}</em></span></div>
+                <div><Store /><span><small>Seller</small><strong>{product.sellerName || product.brand || 'AskKhan Marketplace Seller'}</strong><em>{product.sellerEmail || product.sellerContact || 'Contact through AskKhan Merchant Support'}</em></span></div>
               </div>
 
               <h3>Additional details</h3>
@@ -279,6 +280,7 @@ export default function ProductDetails() {
             </div>
 
             <Link className="button dark contact-seller" to={`/support?type=Product+listing+problem&product=${encodeURIComponent(product.name)}&seller=${encodeURIComponent(product.sellerName || product.brand || '')}`}>Contact seller about this item</Link>
+            {product.sellerEmail && <a className="button contact-seller" href={`mailto:${product.sellerEmail}?subject=${encodeURIComponent(`Question about ${product.name}`)}`}><Mail size={17} /> Email seller</a>}
 
             {product.externalUrl && <Link className="button light-button original-listing" to={`/shop?q=${encodeURIComponent(product.category || product.name)}`}>View similar products</Link>}
           </div>

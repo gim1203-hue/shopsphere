@@ -5,7 +5,7 @@ import { useCatalog } from '../context/CatalogContext'
 import { formatCurrency } from '../utils/format'
 
 const emptyData = { customers: [], orders: [], products: [], messages: [], errorReports: [], customerNextCursor: null, orderNextCursor: null, errorNextCursor: null, integrations: null }
-const newProduct = () => ({ id: '', name: '', category: '', price: '', stock: '', image: '', description: '', color: '', measurements: '', sellerName: '', sellerContact: '', featured: false })
+const newProduct = () => ({ id: '', name: '', category: '', price: '', stock: '', image: '', description: '', color: '', measurements: '', sellerName: '', sellerContact: '', sellerEmail: '', featured: false })
 
 async function adminRequest(session, endpoint, { method = 'GET', body } = {}) {
   const token = await session.getIdToken()
@@ -282,7 +282,8 @@ export default function Admin() {
             <label>Image URL (HTTPS)<input required type="url" value={productForm.image} onChange={(event) => setProductForm({ ...productForm, image: event.target.value })} /></label>
             <label>Description<textarea rows="3" maxLength="1500" value={productForm.description} onChange={(event) => setProductForm({ ...productForm, description: event.target.value })} /></label>
             <label>Exact measurements / dimensions<textarea rows="2" maxLength="500" value={productForm.measurements || ''} onChange={(event) => setProductForm({ ...productForm, measurements: event.target.value })} placeholder="Example: 32 in W × 34 in D × 36 in H" /></label>
-            <div className="admin-form-pair"><label>Seller name<input maxLength="160" value={productForm.sellerName || ''} onChange={(event) => setProductForm({ ...productForm, sellerName: event.target.value })} /></label><label>Seller contact information<input maxLength="300" value={productForm.sellerContact || ''} onChange={(event) => setProductForm({ ...productForm, sellerContact: event.target.value })} placeholder="Email, phone, or support channel" /></label></div>
+            <div className="admin-form-pair"><label>Seller name<input maxLength="160" value={productForm.sellerName || ''} onChange={(event) => setProductForm({ ...productForm, sellerName: event.target.value })} /></label><label>Seller email<input type="email" maxLength="254" value={productForm.sellerEmail || ''} onChange={(event) => setProductForm({ ...productForm, sellerEmail: event.target.value })} placeholder="seller@example.com" /></label></div>
+            <label>Other seller contact information<input maxLength="300" value={productForm.sellerContact || ''} onChange={(event) => setProductForm({ ...productForm, sellerContact: event.target.value })} placeholder="Phone number or support channel" /></label>
             <label className="admin-checkbox"><input type="checkbox" checked={Boolean(productForm.featured)} onChange={(event) => setProductForm({ ...productForm, featured: event.target.checked })} /> Feature on the homepage</label>
             <footer><button type="button" className="admin-small-button" onClick={() => setProductForm(null)}>Cancel</button><button type="submit" className="admin-primary" disabled={working}>Save product</button></footer>
           </form>
