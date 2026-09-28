@@ -1,21 +1,83 @@
-import { createContext, useContext, useEffect, useState } from 'react'
-import { products as initialProducts } from '../data/products'
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+} from 'react'
 
-const CatalogContext = createContext(null)
+import {
+  products as initialProducts,
+} from '../data/products'
 
-export function CatalogProvider({ children }) {
-  const [products, setProducts] = useState(initialProducts)
-  const [loading, setLoading] = useState(false)
+const CatalogContext =
+  createContext(null)
+
+function mergeProducts(
+  localProducts,
+  remoteProducts
+) {
+  const map = new Map()
+
+  localProducts.forEach((product) => {
+    map.set(
+      String(product.id),
+      product
+    )
+  })
+
+  remoteProducts.forEach((product) => {
+    const key =
+      String(
+        product.id ??
+        product.externalUrl ??
+        product.name
+      )
+
+    map.set(key, {
+      ...map.get(key),
+      ...product,
+    })
+  })
+
+  return [...map.values()]
+}
+
+export function CatalogProvider({
+  children,
+}) {
+  const [products, setProducts] =
+    useState(initialProducts)
+
+  const [loading, setLoading] =
+    useState(false)
 
   async function refreshCatalog() {
     setLoading(true)
+
     try {
-      const response = await fetch('/api/catalog')
-      if (!response.ok) throw new Error('Catalog unavailable')
-      const data = await response.json()
-      if (Array.isArray(data.products) && data.products.length) {
-        setProducts(data.products)
+      const response =
+        await fetch('/api/catalog')
+
+      if (!response.ok) {
+        throw new Error(
+          'Catalog unavailable'
+        )
       }
+
+      const data =
+        await response.json()
+
+      const remoteProducts =
+        Array.isArray(data.products)
+          ? data.products
+          : []
+
+      setProducts(
+        mergeProducts(
+          initialProducts,
+          remoteProducts
+        )
+      )
     } catch {
       setProducts(initialProducts)
     } finally {
@@ -25,20 +87,47 @@ export function CatalogProvider({ children }) {
 
   useEffect(() => {
     let cancelled = false
+
     fetch('/api/catalog')
-      .then((response) => response.ok ? response.json() : null)
+      .then((response) =>
+        response.ok
+          ? response.json()
+          : null
+      )
       .then((data) => {
-        if (!cancelled && Array.isArray(data?.products) && data.products.length) {
-          setProducts(data.products)
+        if (cancelled) return
+
+        const remoteProducts =
+          Array.isArray(data?.products)
+            ? data.products
+            : []
+
+        setProducts(
+          mergeProducts(
+            initialProducts,
+            remoteProducts
+          )
+        )
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setProducts(initialProducts)
         }
       })
-      .catch(() => {})
 
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   return (
-    <CatalogContext.Provider value={{ products, loading, refreshCatalog }}>
+    <CatalogContext.Provider
+      value={{
+        products,
+        loading,
+        refreshCatalog,
+      }}
+    >
       {children}
     </CatalogContext.Provider>
   )
