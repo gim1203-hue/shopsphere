@@ -15,7 +15,6 @@ import { Link, useLocation, useParams } from 'react-router-dom'
 import ProductCard from '../components/ProductCard'
 import { useStore } from '../context/StoreContext'
 import { useCatalog } from '../context/CatalogContext'
-import { formatCurrency } from '../utils/format'
 import { getAskKhanPrice } from '../utils/pricing'
 import NotFound from './NotFound'
 
@@ -53,18 +52,6 @@ export default function ProductDetails() {
     product.askKhanPrice ??
       getAskKhanPrice(sourcePrice)
   )
-
-  // Only a real MSRP/list/original price
-  const compareAtPrice = Number(
-    product.compareAtPrice ??
-      product.originalPrice ??
-      product.listPrice ??
-      product.msrp ??
-      0
-  )
-
-  const showCompareAtPrice =
-    compareAtPrice > askKhanPrice
 
   const cartProduct = {
     ...product,
@@ -104,11 +91,6 @@ export default function ProductDetails() {
               alt={product.name}
             />
 
-            {showCompareAtPrice && (
-              <span className="sale-badge">
-                Sale
-              </span>
-            )}
           </div>
 
           <div className="detail-copy">
@@ -122,22 +104,6 @@ export default function ProductDetails() {
               <span>★★★★★</span>{' '}
               {product.rating} ·{' '}
               {product.reviews} reviews
-            </div>
-
-            <div className="detail-price">
-              {showCompareAtPrice && (
-                <del>
-                  {formatCurrency(
-                    compareAtPrice
-                  )}
-                </del>
-              )}
-
-              <strong>
-                {formatCurrency(
-                  askKhanPrice
-                )}
-              </strong>
             </div>
 
             <p className="detail-description">
