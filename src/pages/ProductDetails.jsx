@@ -267,7 +267,7 @@ export default function ProductDetails() {
               </ul>
             </div>
 
-            {product.externalUrl && <a className="button light-button original-listing" href={product.externalUrl} target="_blank" rel="noreferrer">View original seller listing</a>}
+            {product.externalUrl && <Link className="button light-button original-listing" to={`/shop?q=${encodeURIComponent(product.category || product.name)}`}>View similar products</Link>}
           </div>
         </div>
       </section>
