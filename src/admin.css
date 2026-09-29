@@ -16,3 +16,5 @@
 @media(max-width:900px){.admin-messages-grid>.admin-panel:first-child{position:static}.admin-messages-grid>.admin-panel{max-height:none}}
 .admin-customer-actions{display:flex;align-items:center;justify-content:flex-end;gap:6px}.admin-customer-actions .admin-small-button{display:inline-flex;align-items:center;gap:5px}
 @media(max-width:700px){.admin-customer-actions{align-items:stretch;flex-direction:column}}
+.admin-reset-request-list{display:grid;gap:9px}.admin-reset-request-list article{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:12px;padding:14px;border:1px solid #e0e5e0;background:#fbfcfa}.admin-reset-request-list article.handled{opacity:.72}.admin-reset-request-list article>div{display:grid;gap:4px;min-width:0}.admin-reset-request-list article strong{font-size:13px}.admin-reset-request-list article>div span{overflow-wrap:anywhere;color:#707870;font-size:11px}.admin-reset-request-list .admin-primary{padding:8px 11px}
+@media(max-width:700px){.admin-reset-request-list article{grid-template-columns:1fr}.admin-reset-request-list article>.admin-status,.admin-reset-request-list article>.admin-primary{justify-self:start}}

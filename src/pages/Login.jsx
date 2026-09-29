@@ -4,7 +4,7 @@ import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 export default function Login() {
-  const { user, signIn, resetPassword, configured } = useAuth()
+  const { user, signIn, configured } = useAuth()
   const [form, setForm] = useState({ email: '', password: '' })
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
@@ -23,10 +23,14 @@ export default function Login() {
   const forgot = async () => {
     if (!form.email) return setError('Enter your email address first.')
     setBusy(true); setError('')
-    const { error: resetError } = await resetPassword(form.email)
-    setBusy(false)
-    if (resetError) setError(resetError.message)
-    else setMessage('Check your inbox for a password reset link.')
+    try {
+      await fetch('/api/password-reset-request', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: form.email }) })
+      setMessage('Your request was sent to customer support. If the email belongs to an account, support will email a secure reset link.')
+    } catch {
+      setMessage('Your request was received. Contact support@homedepo.tech if you need more help.')
+    } finally {
+      setBusy(false)
+    }
   }
 
   return <section className="auth-page"><div className="auth-panel"><span className="eyebrow">Welcome back</span><h1>Sign in.</h1><p>Access your saved pieces, profile, and order history.</p>{!configured && <div className="config-notice"><strong>Account setup required</strong><span>Add your Firebase project values to the environment to enable live accounts.</span></div>}<form onSubmit={submit}><label><span>Email address</span><input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} autoComplete="email" required /></label><label><span>Password</span><input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} autoComplete="current-password" minLength="8" required /></label>{error && <div className="auth-error" role="alert">{error}</div>}{message && <div className="auth-success" role="status">{message}</div>}<button className="button dark auth-submit" disabled={busy || !configured}>{busy ? 'Signing in…' : <>Sign in <ArrowRight size={17} /></>}</button><button type="button" className="forgot-button" onClick={forgot} disabled={busy || !configured}>Forgot your password?</button></form><div className="auth-switch">New to ShopSphere? <Link to="/signup">Create an account</Link></div><div className="auth-secure"><LockKeyhole size={15} /> Your account is secured by Firebase Auth.</div></div><div className="auth-visual"><img src="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=85" alt="Calm, considered interior" /></div></section>

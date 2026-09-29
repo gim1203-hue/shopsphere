@@ -19,12 +19,13 @@ export default async function handler(request, response) {
       const cursorDocument = await db.collection('errorReports').doc(errorCursor).get()
       if (cursorDocument.exists) errorsQuery = errorsQuery.startAfter(cursorDocument)
     }
-    const [usersPage, cartsSnapshot, messagesSnapshot, inboundSnapshot, hiddenEmailsSnapshot, supportSnapshot, catalog, errorsSnapshot, refundsSnapshot] = await Promise.all([
+    const [usersPage, cartsSnapshot, messagesSnapshot, inboundSnapshot, hiddenEmailsSnapshot, passwordResetSnapshot, supportSnapshot, catalog, errorsSnapshot, refundsSnapshot] = await Promise.all([
       auth.listUsers(100, customerCursor || undefined),
       db.collection('customerCarts').get(),
       db.collection('customerMessages').orderBy('createdAt', 'desc').limit(100).get(),
       db.collection('inboundEmails').orderBy('createdAt', 'desc').limit(100).get(),
       db.collection('hiddenAdminEmails').get(),
+      db.collection('passwordResetRequests').orderBy('createdAt', 'desc').limit(100).get(),
       db.collection('supportRequests').orderBy('createdAt', 'desc').limit(100).get(),
       loadCatalog(db),
       errorsQuery.limit(50).get(),
@@ -172,6 +173,18 @@ export default async function handler(request, response) {
         updatedAt: ticket.updatedAt?.toDate?.().toISOString() || null,
       }
     })
+    const passwordResetRequests = passwordResetSnapshot.docs.map((document) => {
+      const resetRequest = document.data()
+      return {
+        id: document.id,
+        uid: resetRequest.uid || '',
+        name: resetRequest.name || 'Customer',
+        email: resetRequest.email || '',
+        status: resetRequest.status || 'new',
+        createdAt: resetRequest.createdAt?.toDate?.().toISOString() || null,
+        handledAt: resetRequest.handledAt?.toDate?.().toISOString() || null,
+      }
+    })
     const errorReports = errorsSnapshot.docs.map((document) => {
       const report = document.data()
       return {
@@ -193,6 +206,7 @@ export default async function handler(request, response) {
       messages,
       inboundEmails,
       supportRequests,
+      passwordResetRequests,
       errorReports,
       customerNextCursor: usersPage.pageToken || null,
       orderNextCursor,

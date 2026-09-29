@@ -15,13 +15,13 @@ export default async function handler(request, response) {
     }
 
     const uid = String(request.body?.uid || '').trim()
+    const requestId = String(request.body?.requestId || '').trim().slice(0, 200)
     if (!uid) return response.status(400).json({ error: 'Choose a customer.' })
     const customer = await auth.getUser(uid)
     const customerEmail = emailAddress(customer.email)
     if (!customerEmail) return response.status(400).json({ error: 'This customer has no valid email address.' })
 
-    const siteUrl = String(process.env.SITE_URL || 'https://www.homedepo.tech').replace(/\/$/, '')
-    const resetLink = await auth.generatePasswordResetLink(customerEmail, { url: `${siteUrl}/login` })
+    const resetLink = await auth.generatePasswordResetLink(customerEmail)
     const emailResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
@@ -56,6 +56,7 @@ export default async function handler(request, response) {
         adminUid: admin.uid,
         createdAt: FieldValue.serverTimestamp(),
       }),
+      ...(requestId ? [db.collection('passwordResetRequests').doc(requestId).set({ status: 'sent', handledBy: admin.uid, handledAt: FieldValue.serverTimestamp() }, { merge: true })] : []),
     ])
     return response.status(200).json({ sent: true, email: customerEmail })
   } catch (error) {

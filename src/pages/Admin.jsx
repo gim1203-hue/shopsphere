@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { useCatalog } from '../context/CatalogContext'
 import { formatCurrency } from '../utils/format'
 
-const emptyData = { customers: [], orders: [], products: [], messages: [], inboundEmails: [], supportRequests: [], errorReports: [], customerNextCursor: null, orderNextCursor: null, errorNextCursor: null, integrations: null }
+const emptyData = { customers: [], orders: [], products: [], messages: [], inboundEmails: [], supportRequests: [], passwordResetRequests: [], errorReports: [], customerNextCursor: null, orderNextCursor: null, errorNextCursor: null, integrations: null }
 const newProduct = () => ({ id: '', name: '', category: '', price: '', stock: '', image: '', description: '', color: '', measurements: '', sellerName: '', sellerContact: '', sellerEmail: '', featured: false })
 
 async function adminRequest(session, endpoint, { method = 'GET', body } = {}) {
@@ -181,13 +181,14 @@ export default function Admin() {
     }
   }
 
-  async function sendPasswordReset(customer) {
+  async function sendPasswordReset(customer, requestId = '') {
     if (!window.confirm(`Send a secure password reset link to ${customer.email}?`)) return
     setWorking(true)
     setError('')
     try {
-      await adminRequest(session, '/api/admin-password-reset', { method: 'POST', body: { uid: customer.uid } })
+      await adminRequest(session, '/api/admin-password-reset', { method: 'POST', body: { uid: customer.uid, requestId } })
       setNotice(`Password reset link sent to ${customer.email}.`)
+      await loadData()
     } catch (actionError) {
       setError(actionError.message)
     } finally {
@@ -333,14 +334,20 @@ export default function Admin() {
           </div>
         </>}
 
-        {tab === 'customers' && <section className="admin-panel">
+        {tab === 'customers' && <>
+          <section className="admin-panel admin-reset-requests">
+            <div className="admin-panel-heading"><div><h2>Password reset requests</h2><p>Customers appear here after pressing “Forgot your password?” on the sign-in page.</p></div><span className="admin-status pending">{data.passwordResetRequests.filter((request) => request.status !== 'sent').length} new</span></div>
+            <div className="admin-reset-request-list">{data.passwordResetRequests.map((request) => <article className={request.status === 'sent' ? 'handled' : ''} key={request.id}><div><strong>{request.name}</strong><span>{request.email} · Requested {displayDate(request.createdAt)}</span></div><span className={`admin-status ${request.status === 'sent' ? 'paid' : 'pending'}`}>{request.status === 'sent' ? 'Reset link sent' : 'Needs review'}</span>{request.status !== 'sent' && <button type="button" className="admin-primary" disabled={working} onClick={() => sendPasswordReset(request, request.id)}><KeyRound size={14} /> Send reset link</button>}</article>)}{!data.passwordResetRequests.length && <p className="admin-empty">No password reset requests yet.</p>}</div>
+          </section>
+          <section className="admin-panel">
           <div className="admin-panel-heading"><div><h2>Customers</h2><p>Signed-in accounts and their most recently synced carts.</p></div><label className="admin-search"><Search size={16} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Find by name or email" /></label></div>
           <div className="admin-table-wrap"><table><thead><tr><th>Customer</th><th>Joined</th><th>Cart</th><th>Items</th><th /></tr></thead><tbody>
             {matchingCustomers.map((customer) => <tr key={customer.uid}><td><strong>{customer.name || 'Customer'}</strong><small>{customer.email}</small></td><td>{displayDate(customer.createdAt)}</td><td>{customer.cart.map((item) => `${item.name} ×${item.quantity}`).join(', ') || 'Cart empty / not synced'}</td><td>{customer.cart.reduce((count, item) => count + item.quantity, 0)}</td><td><div className="admin-customer-actions"><button type="button" className="admin-small-button" disabled={!customer.email} onClick={() => { setMessageCustomer(customer); setTab('messages') }}><Mail size={13} /> Email</button><button type="button" className="admin-small-button" disabled={working || !customer.email} onClick={() => sendPasswordReset(customer)}><KeyRound size={13} /> Send reset link</button></div></td></tr>)}
           </tbody></table></div>
           {data.customerNextCursor && <button type="button" className="admin-small-button" disabled={loadingMore} onClick={() => loadMore('customers')}>{loadingMore ? 'Loading…' : 'Load more customers'}</button>}
           {!matchingCustomers.length && <p className="admin-empty">No customers match that search.</p>}
-        </section>}
+          </section>
+        </>}
 
         {tab === 'orders' && <section className="admin-panel">
           <div className="admin-panel-heading"><div><h2>Orders & payments</h2><p>Stripe Checkout sessions, receipts, refunds, and private fulfillment details.</p></div><div className="admin-heading-actions">{data.integrations.stripe && <a className="admin-small-button" href="https://dashboard.stripe.com/" target="_blank" rel="noreferrer">Open Stripe dashboard <ExternalLink size={14} /></a>}<a className="admin-small-button" href="https://resend.com/emails" target="_blank" rel="noreferrer">Open Resend <ExternalLink size={14} /></a></div></div>
