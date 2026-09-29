@@ -13,7 +13,8 @@ export default async function handler(request, response) {
     const ticketId = String(request.body?.ticketId || '').trim().slice(0, 100)
     const text = String(request.body?.text || '').trim().slice(0, 6000)
     const close = Boolean(request.body?.close)
-    if (!ticketId || (!text && !close)) return response.status(400).json({ error: 'Choose a ticket and enter a reply.' })
+    const reopen = Boolean(request.body?.reopen)
+    if (!ticketId || (!text && !close && !reopen)) return response.status(400).json({ error: 'Choose a ticket and enter a reply.' })
 
     const reference = db.collection('supportRequests').doc(ticketId)
     const document = await reference.get()
@@ -44,12 +45,12 @@ export default async function handler(request, response) {
     }
 
     const update = {
-      status: close ? 'closed' : 'waiting_for_customer',
+      status: reopen ? 'open' : close ? 'closed' : 'waiting_for_customer',
       updatedAt: FieldValue.serverTimestamp(),
     }
     if (text) update.conversation = FieldValue.arrayUnion({ sender: 'support', text, createdAt: new Date().toISOString() })
     await reference.update(update)
-    return response.status(200).json({ sent: Boolean(text), emailSent: Boolean(text) && !emailError, emailError, closed: close })
+    return response.status(200).json({ sent: Boolean(text), emailSent: Boolean(text) && !emailError, emailError, closed: close, reopened: reopen })
   } catch (error) {
     return sendApiError(response, error)
   }

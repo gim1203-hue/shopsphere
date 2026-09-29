@@ -48,6 +48,7 @@ export default function Admin() {
   const [messageForm, setMessageForm] = useState({ subject: '', text: '' })
   const [supportReplies, setSupportReplies] = useState({})
   const [mailboxView, setMailboxView] = useState('new')
+  const [supportView, setSupportView] = useState('new')
 
   const loadData = useCallback(async () => {
     setError('')
@@ -197,6 +198,21 @@ export default function Admin() {
     }
   }
 
+  async function reopenSupport(ticket) {
+    setWorking(true)
+    setError('')
+    try {
+      await adminRequest(session, '/api/admin-support', { method: 'POST', body: { ticketId: ticket.id, reopen: true } })
+      setNotice('Support conversation moved to New / Active.')
+      setSupportView('new')
+      await loadData()
+    } catch (actionError) {
+      setError(actionError.message)
+    } finally {
+      setWorking(false)
+    }
+  }
+
   async function updateInboundEmail(email, action) {
     if (action === 'delete' && !window.confirm(`Delete “${email.subject}” from this dashboard?`)) return
     setWorking(true)
@@ -310,10 +326,17 @@ export default function Admin() {
           {!data.orders.length && <p className="admin-empty">No payment sessions found.</p>}
         </section>}
 
-        {tab === 'support' && <section className="admin-panel">
-          <div className="admin-panel-heading"><div><h2>Customer help inbox</h2><p>Reply here; customers see the conversation on the support page and receive email when email delivery is configured.</p></div><span className="admin-status pending">{data.supportRequests.filter((ticket) => ticket.status !== 'closed').length} open</span></div>
-          <div className="admin-support-list">{data.supportRequests.map((ticket) => <article className="admin-support-ticket" key={ticket.id}><header><div><strong>{ticket.type}</strong><small>{ticket.email || 'No email'} {ticket.orderNumber ? `· Order ${ticket.orderNumber}` : ''}</small></div><span className={`admin-status ${ticket.status === 'closed' ? 'paid' : 'pending'}`}>{ticket.status.replaceAll('_', ' ')}</span></header><div className="admin-support-thread">{(ticket.conversation?.length ? ticket.conversation : [{ sender: 'customer', text: ticket.message }]).map((entry, index) => <p className={entry.sender === 'support' ? 'support' : 'customer'} key={`${ticket.id}-${index}`}><small>{entry.sender === 'support' ? 'You' : 'Customer'}</small>{entry.text}</p>)}</div>{ticket.status !== 'closed' && <div className="admin-support-reply"><textarea rows="3" value={supportReplies[ticket.id] || ''} onChange={(event) => setSupportReplies((current) => ({ ...current, [ticket.id]: event.target.value }))} placeholder="Reply to the customer…" /><div><button type="button" className="admin-small-button" disabled={working} onClick={() => replyToSupport(ticket, true)}>Close</button><button type="button" className="admin-primary" disabled={working || !String(supportReplies[ticket.id] || '').trim()} onClick={() => replyToSupport(ticket)}><Mail size={15} /> Send reply</button></div></div>}</article>)}{!data.supportRequests.length && <p className="admin-empty">No customer support requests yet.</p>}</div>
-        </section>}
+        {tab === 'support' && <div className="admin-support-layout">
+          <section className="admin-panel admin-support-compose">
+            <div className="admin-panel-heading"><div><h2>Contact an existing customer</h2><p>Select a registered customer and send an email without leaving Live Support.</p></div></div>
+            <form className="admin-message-form" onSubmit={sendMessage}><label>Customer<select value={messageCustomer?.uid || ''} onChange={(event) => { const customer = data.customers.find((item) => item.uid === event.target.value); setMessageCustomer(customer || null) }}><option value="">Choose a customer</option>{data.customers.filter((customer) => customer.email).map((customer) => <option value={customer.uid} key={customer.uid}>{customer.name || 'Customer'} — {customer.email}</option>)}</select></label><label>Subject<input required maxLength="160" disabled={!messageCustomer} value={messageForm.subject} onChange={(event) => setMessageForm({ ...messageForm, subject: event.target.value })} placeholder="How can we help?" /></label><label>Message<textarea required rows="4" maxLength="6000" disabled={!messageCustomer} value={messageForm.text} onChange={(event) => setMessageForm({ ...messageForm, text: event.target.value })} placeholder="Write your message to the customer…" /></label><div><button type="submit" className="admin-primary" disabled={working || !messageCustomer || !messageForm.subject.trim() || !messageForm.text.trim()}><Mail size={16} /> Send email</button></div></form>
+          </section>
+          <section className="admin-panel">
+            <div className="admin-panel-heading"><div><h2>Customer help inbox</h2><p>New and active conversations stay separate from old, closed requests.</p></div><span className="admin-status pending">{data.supportRequests.filter((ticket) => ticket.status !== 'closed').length} active</span></div>
+            <div className="admin-support-filters" role="tablist" aria-label="Support conversation categories"><button type="button" className={supportView === 'new' ? 'active' : ''} onClick={() => setSupportView('new')}>New / Active <span>{data.supportRequests.filter((ticket) => ticket.status !== 'closed').length}</span></button><button type="button" className={supportView === 'old' ? 'active' : ''} onClick={() => setSupportView('old')}>Old / Closed <span>{data.supportRequests.filter((ticket) => ticket.status === 'closed').length}</span></button></div>
+            <div className="admin-support-list">{data.supportRequests.filter((ticket) => supportView === 'new' ? ticket.status !== 'closed' : ticket.status === 'closed').map((ticket) => <article className="admin-support-ticket" key={ticket.id}><header><div><strong>{ticket.type}</strong><small>{ticket.email || 'No email'} {ticket.orderNumber ? `· Order ${ticket.orderNumber}` : ''} · {displayDate(ticket.updatedAt || ticket.createdAt)}</small></div><span className={`admin-status ${ticket.status === 'closed' ? 'paid' : 'pending'}`}>{ticket.status.replaceAll('_', ' ')}</span></header><div className="admin-support-thread">{(ticket.conversation?.length ? ticket.conversation : [{ sender: 'customer', text: ticket.message }]).map((entry, index) => <p className={entry.sender === 'support' ? 'support' : 'customer'} key={`${ticket.id}-${index}`}><small>{entry.sender === 'support' ? 'You' : 'Customer'}</small>{entry.text}</p>)}</div>{ticket.status !== 'closed' ? <div className="admin-support-reply"><textarea rows="3" value={supportReplies[ticket.id] || ''} onChange={(event) => setSupportReplies((current) => ({ ...current, [ticket.id]: event.target.value }))} placeholder="Reply to the customer…" /><div><button type="button" className="admin-small-button" disabled={working} onClick={() => replyToSupport(ticket, true)}>Move to Old</button><button type="button" className="admin-primary" disabled={working || !String(supportReplies[ticket.id] || '').trim()} onClick={() => replyToSupport(ticket)}><Mail size={15} /> Send reply</button></div></div> : <footer className="admin-support-old-actions"><button type="button" className="admin-small-button" disabled={working} onClick={() => reopenSupport(ticket)}>Reopen conversation</button></footer>}</article>)}{!data.supportRequests.some((ticket) => supportView === 'new' ? ticket.status !== 'closed' : ticket.status === 'closed') && <p className="admin-empty">No {supportView === 'new' ? 'new or active' : 'old or closed'} conversations.</p>}</div>
+          </section>
+        </div>}
 
         {tab === 'products' && <section className="admin-panel">
           <div className="admin-panel-heading"><div><h2>Product catalog</h2><p>Changes are saved to Firestore and used by the storefront.</p></div><button type="button" className="admin-primary" onClick={() => setProductForm(newProduct())}><Plus size={16} /> Add product</button></div>
