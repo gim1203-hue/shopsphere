@@ -12,6 +12,7 @@ import { useEffect, useMemo, useState } from 'react'
 import {
   Link,
   NavLink,
+  useLocation,
   useNavigate,
 } from 'react-router-dom'
 
@@ -32,6 +33,7 @@ export default function Header() {
   const [isAdmin, setIsAdmin] = useState(false)
 
   const navigate = useNavigate()
+  const location = useLocation()
 
   useEffect(() => {
     let active = true
@@ -115,13 +117,14 @@ export default function Header() {
           <nav
             className={
               menuOpen
-                ? 'main-nav open'
-                : 'main-nav'
+                ? 'main-nav primary-nav open'
+                : 'main-nav primary-nav'
             }
           >
             <NavLink
               className={navClass}
               to="/"
+              end
               onClick={() =>
                 setMenuOpen(false)
               }
@@ -143,20 +146,6 @@ export default function Header() {
               Customer Service
             </NavLink>
 
-            {categories.map((category) => (
-              <NavLink
-                key={category.name}
-                className={navClass}
-                to={`/shop?category=${encodeURIComponent(
-                  category.name
-                )}`}
-                onClick={() =>
-                  setMenuOpen(false)
-                }
-              >
-                {category.name}
-              </NavLink>
-            ))}
           </nav>
 
           <div className="header-actions">
@@ -223,6 +212,29 @@ export default function Header() {
             </Link>
           </div>
         </div>
+
+        <nav
+          className={menuOpen ? 'category-nav open' : 'category-nav'}
+          aria-label="Shop by category"
+        >
+          <div className="container category-nav-inner">
+            {categories.map((category) => (
+              <NavLink
+                key={category.name}
+                className={() => {
+                  const selectedCategory = new URLSearchParams(location.search).get('category')
+                  return location.pathname === '/shop' && selectedCategory === category.name
+                    ? 'nav-link active'
+                    : 'nav-link'
+                }}
+                to={`/shop?category=${encodeURIComponent(category.name)}`}
+                onClick={() => setMenuOpen(false)}
+              >
+                {category.name}
+              </NavLink>
+            ))}
+          </div>
+        </nav>
 
         {searchOpen && (
           <form
