@@ -1,5 +1,6 @@
 import { FieldValue } from 'firebase-admin/firestore'
 import { requireAdmin, sendApiError } from './_lib/firebaseAdmin.js'
+import { emailAddress } from './_lib/email.js'
 
 export default async function handler(request, response) {
   if (request.method !== 'POST') {
@@ -20,14 +21,15 @@ export default async function handler(request, response) {
     const ticket = document.data()
 
     let emailError = ''
-    if (text && process.env.RESEND_API_KEY && process.env.FROM_EMAIL && ticket.email) {
+    const customerEmail = emailAddress(ticket.email)
+    if (text && process.env.RESEND_API_KEY && process.env.FROM_EMAIL && customerEmail) {
       const emailResponse = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           from: process.env.FROM_EMAIL,
-          to: [ticket.email],
-          reply_to: process.env.SUPPORT_REPLY_TO || undefined,
+          to: [customerEmail],
+          reply_to: emailAddress(process.env.SUPPORT_REPLY_TO) || undefined,
           subject: `Re: ${ticket.type || 'Your support request'} ${ticket.orderNumber || ticketId}`,
           text,
         }),

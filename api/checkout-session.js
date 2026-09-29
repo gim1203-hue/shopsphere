@@ -1,6 +1,7 @@
 import Stripe from 'stripe'
 import { FieldValue, Timestamp } from 'firebase-admin/firestore'
 import { requireSignedInUser } from './_lib/firebaseAdmin.js'
+import { emailAddress } from './_lib/email.js'
 
 const stripe = process.env.STRIPE_SECRET_KEY
   ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2026-02-25.clover' })
@@ -70,7 +71,7 @@ export default async function handler(request, response) {
       const fulfillmentReference = account.db.collection('fulfillmentOrders').doc(session.id)
       const fulfillmentDocument = await fulfillmentReference.get()
       const fulfillment = fulfillmentDocument.data() || {}
-      const fulfillmentEmail = process.env.FULFILLMENT_EMAIL || process.env.SUPPORT_REPLY_TO
+      const fulfillmentEmail = emailAddress(process.env.FULFILLMENT_EMAIL || process.env.SUPPORT_REPLY_TO)
       if (fulfillmentEmail && process.env.RESEND_API_KEY && process.env.FROM_EMAIL && !fulfillment.notificationSentAt) {
         const address = order.shippingAddress
           ? [order.shippingAddress.name, order.shippingAddress.line1, order.shippingAddress.line2, [order.shippingAddress.city, order.shippingAddress.state, order.shippingAddress.postal_code].filter(Boolean).join(' '), order.shippingAddress.country].filter(Boolean).join(', ')
@@ -89,7 +90,7 @@ export default async function handler(request, response) {
           body: JSON.stringify({
             from: process.env.FROM_EMAIL,
             to: [fulfillmentEmail],
-            reply_to: order.email || undefined,
+            reply_to: emailAddress(order.email) || undefined,
             subject: `Paid order ${order.number} is ready to fulfill`,
             text: `Customer: ${session.customer_details?.name || shipping?.name || 'Not supplied'}\nEmail: ${order.email || 'Not supplied'}\nPhone: ${session.customer_details?.phone || 'Not supplied'}\nShip to: ${address}\nPaid total: $${((session.amount_total || 0) / 100).toFixed(2)}\n\nPRODUCTS TO PURCHASE\n\n${itemDetails || 'Product details unavailable. Open the admin order for more information.'}`,
           }),

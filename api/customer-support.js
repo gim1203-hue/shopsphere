@@ -1,5 +1,6 @@
 import { FieldValue } from 'firebase-admin/firestore'
 import { requireSignedInUser, sendApiError } from './_lib/firebaseAdmin.js'
+import { emailAddress } from './_lib/email.js'
 
 export default async function handler(request, response) {
   try {
@@ -56,14 +57,15 @@ export default async function handler(request, response) {
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
     })
-    if (process.env.RESEND_API_KEY && process.env.FROM_EMAIL && process.env.SUPPORT_REPLY_TO) {
+    const supportEmail = emailAddress(process.env.SUPPORT_REPLY_TO)
+    if (process.env.RESEND_API_KEY && process.env.FROM_EMAIL && supportEmail) {
       await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           from: process.env.FROM_EMAIL,
-          to: [process.env.SUPPORT_REPLY_TO],
-          reply_to: user.email || undefined,
+          to: [supportEmail],
+          reply_to: emailAddress(user.email) || undefined,
           subject: `[${type}] Customer request ${orderNumber || ticket.id}`,
           text: `Customer: ${user.email || user.uid}\nOrder: ${orderNumber || 'Not supplied'}\n\n${message}`,
         }),

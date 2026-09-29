@@ -1,5 +1,6 @@
 import { FieldValue } from 'firebase-admin/firestore'
 import { requireAdmin, sendApiError } from './_lib/firebaseAdmin.js'
+import { emailAddress } from './_lib/email.js'
 
 export default async function handler(request, response) {
   if (request.method !== 'POST') {
@@ -21,7 +22,8 @@ export default async function handler(request, response) {
     }
 
     const customer = await auth.getUser(uid)
-    if (!customer.email) return response.status(400).json({ error: 'This customer has no email address.' })
+    const customerEmail = emailAddress(customer.email)
+    if (!customerEmail) return response.status(400).json({ error: 'This customer has no valid email address.' })
 
     const emailResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -31,10 +33,10 @@ export default async function handler(request, response) {
       },
       body: JSON.stringify({
         from: process.env.FROM_EMAIL,
-        to: [customer.email],
+        to: [customerEmail],
         subject,
         text,
-        reply_to: process.env.SUPPORT_REPLY_TO || undefined,
+        reply_to: emailAddress(process.env.SUPPORT_REPLY_TO) || undefined,
       }),
     })
     if (!emailResponse.ok) {
@@ -46,7 +48,7 @@ export default async function handler(request, response) {
 
     await db.collection('customerMessages').add({
       uid,
-      email: customer.email,
+      email: customerEmail,
       subject,
       text,
       adminUid: user.uid,
