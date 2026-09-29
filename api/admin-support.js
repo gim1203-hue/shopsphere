@@ -19,6 +19,7 @@ export default async function handler(request, response) {
     if (!document.exists) return response.status(404).json({ error: 'Support request not found.' })
     const ticket = document.data()
 
+    let emailError = ''
     if (text && process.env.RESEND_API_KEY && process.env.FROM_EMAIL && ticket.email) {
       const emailResponse = await fetch('https://api.resend.com/emails', {
         method: 'POST',
@@ -31,7 +32,13 @@ export default async function handler(request, response) {
           text,
         }),
       })
-      if (!emailResponse.ok) return response.status(502).json({ error: 'The reply email could not be sent.' })
+      if (!emailResponse.ok) {
+        const providerError = await emailResponse.json().catch(() => ({}))
+        emailError = String(providerError.message || `Email provider returned ${emailResponse.status}`).slice(0, 300)
+        console.error('Support reply email failed:', emailResponse.status, emailError)
+      }
+    } else if (text) {
+      emailError = 'Email delivery is not configured.'
     }
 
     const update = {
@@ -40,7 +47,7 @@ export default async function handler(request, response) {
     }
     if (text) update.conversation = FieldValue.arrayUnion({ sender: 'support', text, createdAt: new Date().toISOString() })
     await reference.update(update)
-    return response.status(200).json({ sent: Boolean(text), closed: close })
+    return response.status(200).json({ sent: Boolean(text), emailSent: Boolean(text) && !emailError, emailError, closed: close })
   } catch (error) {
     return sendApiError(response, error)
   }

@@ -185,9 +185,9 @@ export default function Admin() {
     setWorking(true)
     setError('')
     try {
-      await adminRequest(session, '/api/admin-support', { method: 'POST', body: { ticketId: ticket.id, text, close } })
+      const result = await adminRequest(session, '/api/admin-support', { method: 'POST', body: { ticketId: ticket.id, text, close } })
       setSupportReplies((current) => ({ ...current, [ticket.id]: '' }))
-      setNotice(close ? 'Support conversation closed.' : 'Reply sent to the customer and added to the conversation.')
+      setNotice(close ? 'Support conversation closed.' : result.emailSent ? 'Reply added to chat and sent by email.' : `Reply added to chat. Email warning: ${result.emailError}`)
       await loadData()
     } catch (actionError) {
       setError(actionError.message)

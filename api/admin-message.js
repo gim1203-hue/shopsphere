@@ -38,8 +38,10 @@ export default async function handler(request, response) {
       }),
     })
     if (!emailResponse.ok) {
-      console.error('Customer email provider returned:', emailResponse.status)
-      return response.status(502).json({ error: 'The customer email could not be sent.' })
+      const providerError = await emailResponse.json().catch(() => ({}))
+      const message = String(providerError.message || `Email provider returned ${emailResponse.status}`).slice(0, 300)
+      console.error('Customer email provider returned:', emailResponse.status, message)
+      return response.status(502).json({ error: `Email could not be sent: ${message}` })
     }
 
     await db.collection('customerMessages').add({
