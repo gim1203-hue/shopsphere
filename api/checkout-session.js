@@ -66,6 +66,36 @@ export default async function handler(request, response) {
           updatedAt: FieldValue.serverTimestamp(),
         }, { merge: true }),
       ])
+
+      const fulfillmentReference = account.db.collection('fulfillmentOrders').doc(session.id)
+      const fulfillmentDocument = await fulfillmentReference.get()
+      const fulfillment = fulfillmentDocument.data() || {}
+      const fulfillmentEmail = process.env.FULFILLMENT_EMAIL || process.env.SUPPORT_REPLY_TO
+      if (fulfillmentEmail && process.env.RESEND_API_KEY && process.env.FROM_EMAIL && !fulfillment.notificationSentAt) {
+        const address = order.shippingAddress
+          ? [order.shippingAddress.name, order.shippingAddress.line1, order.shippingAddress.line2, [order.shippingAddress.city, order.shippingAddress.state, order.shippingAddress.postal_code].filter(Boolean).join(' '), order.shippingAddress.country].filter(Boolean).join(', ')
+          : 'Not supplied'
+        const itemDetails = (fulfillment.items || []).map((item) => [
+          `${item.quantity} x ${item.name}`,
+          `Merchant: ${item.merchantName || 'Not supplied'}`,
+          `Supplier price: $${Number(item.sourcePrice || 0).toFixed(2)} each`,
+          `Merchant email: ${item.merchantEmail || 'Not supplied'}`,
+          `Merchant contact: ${item.merchantContact || 'Not supplied'}`,
+          `Purchase link: ${item.purchaseUrl || 'Not supplied'}`,
+        ].join('\n')).join('\n\n')
+        const emailResponse = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            from: process.env.FROM_EMAIL,
+            to: [fulfillmentEmail],
+            reply_to: order.email || undefined,
+            subject: `Paid order ${order.number} is ready to fulfill`,
+            text: `Customer: ${session.customer_details?.name || shipping?.name || 'Not supplied'}\nEmail: ${order.email || 'Not supplied'}\nPhone: ${session.customer_details?.phone || 'Not supplied'}\nShip to: ${address}\nPaid total: $${((session.amount_total || 0) / 100).toFixed(2)}\n\nPRODUCTS TO PURCHASE\n\n${itemDetails || 'Product details unavailable. Open the admin order for more information.'}`,
+          }),
+        })
+        if (emailResponse.ok) await fulfillmentReference.set({ notificationSentAt: FieldValue.serverTimestamp() }, { merge: true })
+      }
     }
     return response.status(200).json({ paid, order: order.number, email: order.email })
   } catch (error) {

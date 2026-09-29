@@ -1,10 +1,10 @@
 import { createElement, useCallback, useEffect, useMemo, useState } from 'react'
-import { AlertTriangle, ExternalLink, Mail, MapPin, Package, Plus, RefreshCw, Search, ShieldCheck, Store, Users, Wallet, X } from 'lucide-react'
+import { AlertTriangle, ExternalLink, Mail, MapPin, MessageCircle, Package, Plus, ReceiptText, RefreshCw, Search, ShieldCheck, Store, Users, Wallet, X } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useCatalog } from '../context/CatalogContext'
 import { formatCurrency } from '../utils/format'
 
-const emptyData = { customers: [], orders: [], products: [], messages: [], errorReports: [], customerNextCursor: null, orderNextCursor: null, errorNextCursor: null, integrations: null }
+const emptyData = { customers: [], orders: [], products: [], messages: [], supportRequests: [], errorReports: [], customerNextCursor: null, orderNextCursor: null, errorNextCursor: null, integrations: null }
 const newProduct = () => ({ id: '', name: '', category: '', price: '', stock: '', image: '', description: '', color: '', measurements: '', sellerName: '', sellerContact: '', sellerEmail: '', featured: false })
 
 async function adminRequest(session, endpoint, { method = 'GET', body } = {}) {
@@ -46,6 +46,7 @@ export default function Admin() {
   const [productForm, setProductForm] = useState(null)
   const [messageCustomer, setMessageCustomer] = useState(null)
   const [messageForm, setMessageForm] = useState({ subject: '', text: '' })
+  const [supportReplies, setSupportReplies] = useState({})
 
   const loadData = useCallback(async () => {
     setError('')
@@ -62,6 +63,12 @@ export default function Admin() {
   useEffect(() => {
     if (session) loadData()
   }, [loadData, session])
+
+  useEffect(() => {
+    if (tab !== 'support' || !session) return undefined
+    const timer = setInterval(loadData, 15000)
+    return () => clearInterval(timer)
+  }, [loadData, session, tab])
 
   const matchingCustomers = useMemo(() => {
     const query = search.trim().toLowerCase()
@@ -172,6 +179,23 @@ export default function Admin() {
     }
   }
 
+  async function replyToSupport(ticket, close = false) {
+    const text = String(supportReplies[ticket.id] || '').trim()
+    if (!close && !text) return
+    setWorking(true)
+    setError('')
+    try {
+      await adminRequest(session, '/api/admin-support', { method: 'POST', body: { ticketId: ticket.id, text, close } })
+      setSupportReplies((current) => ({ ...current, [ticket.id]: '' }))
+      setNotice(close ? 'Support conversation closed.' : 'Reply sent to the customer and added to the conversation.')
+      await loadData()
+    } catch (actionError) {
+      setError(actionError.message)
+    } finally {
+      setWorking(false)
+    }
+  }
+
   if (loading && !data.customers.length && !error) {
     return <section className="container admin-loading">Loading store management…</section>
   }
@@ -184,6 +208,7 @@ export default function Admin() {
     { id: 'overview', label: 'Overview', icon: Wallet },
     { id: 'customers', label: 'Customers', icon: Users },
     { id: 'orders', label: 'Orders & payments', icon: Package },
+    { id: 'support', label: 'Live support', icon: MessageCircle },
     { id: 'products', label: 'Products', icon: Package },
     { id: 'messages', label: 'Messages', icon: Mail },
     { id: 'errors', label: 'Errors', icon: AlertTriangle },
@@ -233,6 +258,7 @@ export default function Admin() {
               <div className="admin-service-row"><span>Firebase customers and carts</span><strong className="connected">Connected</strong></div>
               <div className="admin-service-row"><span>Stripe payment management</span><strong className={data.integrations.stripe ? 'connected' : 'disconnected'}>{data.integrations.stripe ? 'Connected' : 'Needs setup'}</strong></div>
               <div className="admin-service-row"><span>Customer email</span><strong className={data.integrations.email ? 'connected' : 'disconnected'}>{data.integrations.email ? 'Connected' : 'Needs setup'}</strong></div>
+              <div className="admin-service-row"><span>Paid-order fulfillment email</span><strong className={data.integrations.fulfillmentEmail ? 'connected' : 'disconnected'}>{data.integrations.fulfillmentEmail ? 'Connected' : 'Needs setup'}</strong></div>
               <p className="admin-note">Email replies go to your configured support inbox.</p>
             </section>
           </div>
@@ -248,7 +274,7 @@ export default function Admin() {
         </section>}
 
         {tab === 'orders' && <section className="admin-panel">
-          <div className="admin-panel-heading"><div><h2>Orders & payments</h2><p>Stripe Checkout sessions. Guest purchases are included.</p></div></div>
+          <div className="admin-panel-heading"><div><h2>Orders & payments</h2><p>Stripe Checkout sessions, receipts, refunds, and private fulfillment details.</p></div>{data.integrations.stripe && <a className="admin-small-button" href="https://dashboard.stripe.com/" target="_blank" rel="noreferrer">Open Stripe dashboard <ExternalLink size={14} /></a>}</div>
           {!data.integrations.stripe && <p className="admin-alert">Add the Stripe secret key to the server environment to view and refund payments.</p>}
           <div className="admin-table-wrap"><table><thead><tr><th>Order</th><th>Customer</th><th>Date</th><th>Payment</th><th>Total</th><th>Action</th></tr></thead><tbody>
             {data.orders.map((order) => <tr key={order.id}><td><code>{order.id.slice(-12)}</code></td><td>{order.email || 'Guest checkout'}</td><td>{displayDate(order.createdAt)}</td><td><span className={`admin-status ${order.refunded ? 'refunded' : order.paymentStatus}`}>{order.refunded ? 'refunded' : order.paymentStatus}</span></td><td>{formatCurrency(order.amount / 100)}</td><td>{order.paymentStatus === 'paid' && !order.refunded ? <button type="button" className="admin-small-button danger" disabled={working} onClick={() => issueRefund(order)}>Full refund</button> : order.refunded ? 'Refund complete' : '—'}</td></tr>)}
@@ -260,9 +286,16 @@ export default function Admin() {
               <article><h4><MapPin size={17} /> Customer and delivery</h4><p><span>Name</span><strong>{order.name || 'Not provided'}</strong></p><p><span>Email</span><strong>{order.email || 'Not provided'}</strong></p><p><span>Phone</span><strong>{order.phone || 'Not provided'}</strong></p><p><span>Ship to</span><strong>{displayAddress(order.shippingAddress)}</strong></p></article>
               <article><h4><Store size={17} /> Products to purchase</h4>{order.items?.length ? order.items.map((item, index) => <div className="admin-merchant-item" key={`${item.productId}-${index}`}><img src={item.image} alt="" /><div><strong>{item.quantity} × {item.name}</strong><span>Merchant: {item.merchantName || 'Not provided'}</span><span>Supplier cost: {formatCurrency(Number(item.sourcePrice || 0))} each</span>{item.merchantEmail && <span>Email: {item.merchantEmail}</span>}{item.merchantContact && <span>Contact: {item.merchantContact}</span>}{item.purchaseUrl ? <a href={item.purchaseUrl} target="_blank" rel="noreferrer">Open merchant product <ExternalLink size={14} /></a> : <span>Merchant product link unavailable</span>}</div></div>) : <p>No private item details were stored for this older order.</p>}</article>
             </div>
+            <div className="admin-receipt-actions">{order.paymentIntent && <a className="admin-primary" href={order.stripeUrl} target="_blank" rel="noreferrer">Open payment in Stripe <ExternalLink size={14} /></a>}{order.receiptUrl && <a className="admin-small-button" href={order.receiptUrl} target="_blank" rel="noreferrer"><ReceiptText size={14} /> Customer receipt</a>}</div>
+            <div className="admin-receipt-lines">{order.receiptItems?.map((item, index) => <p key={`${item.name}-${index}`}><span>{item.quantity} × {item.name}</span><strong>{formatCurrency(item.amount / 100)}</strong></p>)}<p className="total"><span>Paid total</span><strong>{formatCurrency(order.amount / 100)}</strong></p></div>
             <p className="admin-note">Supplier costs and merchant links are private and do not appear on the customer invoice.</p>
           </details>)}</div>
           {!data.orders.length && <p className="admin-empty">No payment sessions found.</p>}
+        </section>}
+
+        {tab === 'support' && <section className="admin-panel">
+          <div className="admin-panel-heading"><div><h2>Customer help inbox</h2><p>Reply here; customers see the conversation on the support page and receive email when email delivery is configured.</p></div><span className="admin-status pending">{data.supportRequests.filter((ticket) => ticket.status !== 'closed').length} open</span></div>
+          <div className="admin-support-list">{data.supportRequests.map((ticket) => <article className="admin-support-ticket" key={ticket.id}><header><div><strong>{ticket.type}</strong><small>{ticket.email || 'No email'} {ticket.orderNumber ? `· Order ${ticket.orderNumber}` : ''}</small></div><span className={`admin-status ${ticket.status === 'closed' ? 'paid' : 'pending'}`}>{ticket.status.replaceAll('_', ' ')}</span></header><div className="admin-support-thread">{(ticket.conversation?.length ? ticket.conversation : [{ sender: 'customer', text: ticket.message }]).map((entry, index) => <p className={entry.sender === 'support' ? 'support' : 'customer'} key={`${ticket.id}-${index}`}><small>{entry.sender === 'support' ? 'You' : 'Customer'}</small>{entry.text}</p>)}</div>{ticket.status !== 'closed' && <div className="admin-support-reply"><textarea rows="3" value={supportReplies[ticket.id] || ''} onChange={(event) => setSupportReplies((current) => ({ ...current, [ticket.id]: event.target.value }))} placeholder="Reply to the customer…" /><div><button type="button" className="admin-small-button" disabled={working} onClick={() => replyToSupport(ticket, true)}>Close</button><button type="button" className="admin-primary" disabled={working || !String(supportReplies[ticket.id] || '').trim()} onClick={() => replyToSupport(ticket)}><Mail size={15} /> Send reply</button></div></div>}</article>)}{!data.supportRequests.length && <p className="admin-empty">No customer support requests yet.</p>}</div>
         </section>}
 
         {tab === 'products' && <section className="admin-panel">

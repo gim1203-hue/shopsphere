@@ -1,0 +1,47 @@
+import { FieldValue } from 'firebase-admin/firestore'
+import { requireAdmin, sendApiError } from './_lib/firebaseAdmin.js'
+
+export default async function handler(request, response) {
+  if (request.method !== 'POST') {
+    response.setHeader('Allow', 'POST')
+    return response.status(405).json({ error: 'Method not allowed' })
+  }
+
+  try {
+    const { db } = await requireAdmin(request)
+    const ticketId = String(request.body?.ticketId || '').trim().slice(0, 100)
+    const text = String(request.body?.text || '').trim().slice(0, 6000)
+    const close = Boolean(request.body?.close)
+    if (!ticketId || (!text && !close)) return response.status(400).json({ error: 'Choose a ticket and enter a reply.' })
+
+    const reference = db.collection('supportRequests').doc(ticketId)
+    const document = await reference.get()
+    if (!document.exists) return response.status(404).json({ error: 'Support request not found.' })
+    const ticket = document.data()
+
+    if (text && process.env.RESEND_API_KEY && process.env.FROM_EMAIL && ticket.email) {
+      const emailResponse = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          from: process.env.FROM_EMAIL,
+          to: [ticket.email],
+          reply_to: process.env.SUPPORT_REPLY_TO || undefined,
+          subject: `Re: ${ticket.type || 'Your support request'} ${ticket.orderNumber || ticketId}`,
+          text,
+        }),
+      })
+      if (!emailResponse.ok) return response.status(502).json({ error: 'The reply email could not be sent.' })
+    }
+
+    const update = {
+      status: close ? 'closed' : 'waiting_for_customer',
+      updatedAt: FieldValue.serverTimestamp(),
+    }
+    if (text) update.conversation = FieldValue.arrayUnion({ sender: 'support', text, createdAt: new Date().toISOString() })
+    await reference.update(update)
+    return response.status(200).json({ sent: Boolean(text), closed: close })
+  } catch (error) {
+    return sendApiError(response, error)
+  }
+}

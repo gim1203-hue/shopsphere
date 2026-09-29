@@ -18,10 +18,11 @@ export default async function handler(request, response) {
       const cursorDocument = await db.collection('errorReports').doc(errorCursor).get()
       if (cursorDocument.exists) errorsQuery = errorsQuery.startAfter(cursorDocument)
     }
-    const [usersPage, cartsSnapshot, messagesSnapshot, catalog, errorsSnapshot, refundsSnapshot] = await Promise.all([
+    const [usersPage, cartsSnapshot, messagesSnapshot, supportSnapshot, catalog, errorsSnapshot, refundsSnapshot] = await Promise.all([
       auth.listUsers(100, customerCursor || undefined),
       db.collection('customerCarts').get(),
       db.collection('customerMessages').orderBy('createdAt', 'desc').limit(100).get(),
+      db.collection('supportRequests').orderBy('createdAt', 'desc').limit(100).get(),
       loadCatalog(db),
       errorsQuery.limit(50).get(),
       db.collection('storeRefunds').get(),
@@ -44,6 +45,7 @@ export default async function handler(request, response) {
       const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
       const sessions = await stripe.checkout.sessions.list({
         limit: 50,
+        expand: ['data.line_items', 'data.payment_intent.latest_charge'],
         ...(orderCursor ? { starting_after: orderCursor } : {}),
       })
       const fulfillmentDocuments = sessions.data.length
@@ -52,6 +54,8 @@ export default async function handler(request, response) {
       const fulfillmentBySession = new Map(fulfillmentDocuments.filter((document) => document.exists).map((document) => [document.id, document.data()]))
       orders = sessions.data.map((session) => {
         const fulfillment = fulfillmentBySession.get(session.id) || {}
+        const intent = typeof session.payment_intent === 'object' ? session.payment_intent : null
+        const charge = typeof intent?.latest_charge === 'object' ? intent.latest_charge : null
         return {
           id: session.id,
           name: fulfillment.customerName || session.customer_details?.name || '',
@@ -59,6 +63,12 @@ export default async function handler(request, response) {
           phone: fulfillment.customerPhone || session.customer_details?.phone || '',
           shippingAddress: fulfillment.shippingAddress || null,
           items: fulfillment.items || [],
+          receiptItems: (session.line_items?.data || []).map((item) => ({
+            name: item.description || 'Purchased item',
+            quantity: item.quantity || 1,
+            amount: item.amount_total || 0,
+          })),
+          receiptUrl: charge?.receipt_url || null,
           fulfillmentStatus: fulfillment.fulfillmentStatus || (session.payment_status === 'paid' ? 'needs_order_details' : 'awaiting_payment'),
           amount: session.amount_total || 0,
           currency: session.currency || 'usd',
@@ -69,6 +79,7 @@ export default async function handler(request, response) {
           paymentIntent: typeof session.payment_intent === 'string'
             ? session.payment_intent
             : session.payment_intent?.id || null,
+          stripeUrl: `https://dashboard.stripe.com/${process.env.STRIPE_SECRET_KEY.startsWith('sk_test_') ? 'test/' : ''}payments/${typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id || ''}`,
         }
       })
       orderNextCursor = sessions.has_more ? sessions.data.at(-1)?.id || null : null
@@ -83,6 +94,21 @@ export default async function handler(request, response) {
         subject: message.subject,
         text: message.text,
         createdAt: message.createdAt?.toDate?.().toISOString() || null,
+      }
+    })
+    const supportRequests = supportSnapshot.docs.map((document) => {
+      const ticket = document.data()
+      return {
+        id: document.id,
+        uid: ticket.uid || '',
+        email: ticket.email || '',
+        type: ticket.type || 'Customer help',
+        orderNumber: ticket.orderNumber || '',
+        message: ticket.message || '',
+        status: ticket.status || 'open',
+        conversation: Array.isArray(ticket.conversation) ? ticket.conversation : [],
+        createdAt: ticket.createdAt?.toDate?.().toISOString() || null,
+        updatedAt: ticket.updatedAt?.toDate?.().toISOString() || null,
       }
     })
     const errorReports = errorsSnapshot.docs.map((document) => {
@@ -104,6 +130,7 @@ export default async function handler(request, response) {
       orders,
       products: catalog,
       messages,
+      supportRequests,
       errorReports,
       customerNextCursor: usersPage.pageToken || null,
       orderNextCursor,
@@ -111,6 +138,7 @@ export default async function handler(request, response) {
       integrations: {
         stripe: Boolean(process.env.STRIPE_SECRET_KEY),
         email: Boolean(process.env.RESEND_API_KEY && process.env.FROM_EMAIL),
+        fulfillmentEmail: Boolean(process.env.RESEND_API_KEY && process.env.FROM_EMAIL && (process.env.FULFILLMENT_EMAIL || process.env.SUPPORT_REPLY_TO)),
       },
     })
   } catch (error) {
