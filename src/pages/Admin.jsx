@@ -1,5 +1,5 @@
 import { createElement, useCallback, useEffect, useMemo, useState } from 'react'
-import { AlertTriangle, Mail, Package, Plus, RefreshCw, Search, ShieldCheck, Users, Wallet, X } from 'lucide-react'
+import { AlertTriangle, ExternalLink, Mail, MapPin, Package, Plus, RefreshCw, Search, ShieldCheck, Store, Users, Wallet, X } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useCatalog } from '../context/CatalogContext'
 import { formatCurrency } from '../utils/format'
@@ -25,6 +25,11 @@ async function adminRequest(session, endpoint, { method = 'GET', body } = {}) {
 function displayDate(value) {
   const date = typeof value === 'number' ? new Date(value * 1000) : new Date(value)
   return Number.isNaN(date.getTime()) ? '—' : date.toLocaleDateString()
+}
+
+function displayAddress(address) {
+  if (!address) return 'Shipping address will appear after successful payment confirmation.'
+  return [address.name, address.line1, address.line2, [address.city, address.state, address.postal_code || address.postalCode].filter(Boolean).join(' '), address.country].filter(Boolean).join(', ')
 }
 
 export default function Admin() {
@@ -249,6 +254,14 @@ export default function Admin() {
             {data.orders.map((order) => <tr key={order.id}><td><code>{order.id.slice(-12)}</code></td><td>{order.email || 'Guest checkout'}</td><td>{displayDate(order.createdAt)}</td><td><span className={`admin-status ${order.refunded ? 'refunded' : order.paymentStatus}`}>{order.refunded ? 'refunded' : order.paymentStatus}</span></td><td>{formatCurrency(order.amount / 100)}</td><td>{order.paymentStatus === 'paid' && !order.refunded ? <button type="button" className="admin-small-button danger" disabled={working} onClick={() => issueRefund(order)}>Full refund</button> : order.refunded ? 'Refund complete' : '—'}</td></tr>)}
           </tbody></table></div>
           {data.orderNextCursor && <button type="button" className="admin-small-button" disabled={loadingMore} onClick={() => loadMore('orders')}>{loadingMore ? 'Loading…' : 'Load more payments'}</button>}
+          <div className="admin-fulfillment-list">{data.orders.filter((order) => order.paymentStatus === 'paid').map((order) => <details className="admin-fulfillment-detail" key={`fulfillment-${order.id}`}>
+            <summary><span><strong>{order.name || 'Customer'}</strong><small>{order.email || 'Email unavailable'} · Order {order.id.slice(-12)}</small></span><span className="admin-status pending">{String(order.fulfillmentStatus || 'processing').replaceAll('_', ' ')}</span></summary>
+            <div className="admin-fulfillment-grid">
+              <article><h4><MapPin size={17} /> Customer and delivery</h4><p><span>Name</span><strong>{order.name || 'Not provided'}</strong></p><p><span>Email</span><strong>{order.email || 'Not provided'}</strong></p><p><span>Phone</span><strong>{order.phone || 'Not provided'}</strong></p><p><span>Ship to</span><strong>{displayAddress(order.shippingAddress)}</strong></p></article>
+              <article><h4><Store size={17} /> Products to purchase</h4>{order.items?.length ? order.items.map((item, index) => <div className="admin-merchant-item" key={`${item.productId}-${index}`}><img src={item.image} alt="" /><div><strong>{item.quantity} × {item.name}</strong><span>Merchant: {item.merchantName || 'Not provided'}</span><span>Supplier cost: {formatCurrency(Number(item.sourcePrice || 0))} each</span>{item.merchantEmail && <span>Email: {item.merchantEmail}</span>}{item.merchantContact && <span>Contact: {item.merchantContact}</span>}{item.purchaseUrl ? <a href={item.purchaseUrl} target="_blank" rel="noreferrer">Open merchant product <ExternalLink size={14} /></a> : <span>Merchant product link unavailable</span>}</div></div>) : <p>No private item details were stored for this older order.</p>}</article>
+            </div>
+            <p className="admin-note">Supplier costs and merchant links are private and do not appear on the customer invoice.</p>
+          </details>)}</div>
           {!data.orders.length && <p className="admin-empty">No payment sessions found.</p>}
         </section>}
 

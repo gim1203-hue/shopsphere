@@ -12,6 +12,10 @@ export function signProduct(product) {
     sourcePrice: product.sourcePrice,
     image: product.image,
     source: product.brand,
+    externalUrl: product.externalUrl,
+    sellerName: product.sellerName,
+    sellerEmail: product.sellerEmail,
+    sellerContact: product.sellerContact,
   })
   const signature = crypto.createHmac('sha256', secret).update(payload).digest('base64url')
   return `${payload}.${signature}`

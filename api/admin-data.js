@@ -46,19 +46,31 @@ export default async function handler(request, response) {
         limit: 50,
         ...(orderCursor ? { starting_after: orderCursor } : {}),
       })
-      orders = sessions.data.map((session) => ({
-        id: session.id,
-        email: session.customer_details?.email || session.customer_email || '',
-        amount: session.amount_total || 0,
-        currency: session.currency || 'usd',
-        paymentStatus: session.payment_status,
-        refunded: refundsBySession.has(session.id),
-        status: session.status,
-        createdAt: session.created,
-        paymentIntent: typeof session.payment_intent === 'string'
-          ? session.payment_intent
-          : session.payment_intent?.id || null,
-      }))
+      const fulfillmentDocuments = sessions.data.length
+        ? await db.getAll(...sessions.data.map((session) => db.collection('fulfillmentOrders').doc(session.id)))
+        : []
+      const fulfillmentBySession = new Map(fulfillmentDocuments.filter((document) => document.exists).map((document) => [document.id, document.data()]))
+      orders = sessions.data.map((session) => {
+        const fulfillment = fulfillmentBySession.get(session.id) || {}
+        return {
+          id: session.id,
+          name: fulfillment.customerName || session.customer_details?.name || '',
+          email: fulfillment.customerEmail || session.customer_details?.email || session.customer_email || '',
+          phone: fulfillment.customerPhone || session.customer_details?.phone || '',
+          shippingAddress: fulfillment.shippingAddress || null,
+          items: fulfillment.items || [],
+          fulfillmentStatus: fulfillment.fulfillmentStatus || (session.payment_status === 'paid' ? 'needs_order_details' : 'awaiting_payment'),
+          amount: session.amount_total || 0,
+          currency: session.currency || 'usd',
+          paymentStatus: session.payment_status,
+          refunded: refundsBySession.has(session.id),
+          status: session.status,
+          createdAt: session.created,
+          paymentIntent: typeof session.payment_intent === 'string'
+            ? session.payment_intent
+            : session.payment_intent?.id || null,
+        }
+      })
       orderNextCursor = sessions.has_more ? sessions.data.at(-1)?.id || null : null
     }
 

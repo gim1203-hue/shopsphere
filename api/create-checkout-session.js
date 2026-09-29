@@ -22,6 +22,12 @@ function resolveCartItem(item, catalog) {
       name: catalogProduct.name,
       image: catalogProduct.image,
       unitAmount: toCents(catalogProduct.price),
+      productId: String(catalogProduct.id),
+      sourcePrice: Number(catalogProduct.sourcePrice ?? catalogProduct.price),
+      merchantName: catalogProduct.sellerName || catalogProduct.brand || 'Marketplace seller',
+      merchantEmail: catalogProduct.sellerEmail || '',
+      merchantContact: catalogProduct.sellerContact || '',
+      purchaseUrl: catalogProduct.externalUrl || '',
     }
   }
 
@@ -33,6 +39,12 @@ function resolveCartItem(item, catalog) {
     name: String(signedProduct.name).slice(0, 120),
     image: signedProduct.image,
     unitAmount: toCents(Number(signedProduct.sourcePrice) * 1.1),
+    productId: String(signedProduct.id),
+    sourcePrice: Number(signedProduct.sourcePrice),
+    merchantName: signedProduct.sellerName || signedProduct.source || 'Marketplace seller',
+    merchantEmail: signedProduct.sellerEmail || '',
+    merchantContact: signedProduct.sellerContact || '',
+    purchaseUrl: signedProduct.externalUrl || '',
   }
 }
 
@@ -44,9 +56,9 @@ export default async function handler(request, response) {
 
   if (!stripe) return response.status(503).json({ error: 'Stripe is not configured' })
 
-  let signedInUser
+  let account
   try {
-    signedInUser = (await requireSignedInUser(request)).user
+    account = await requireSignedInUser(request)
   } catch (error) {
     return response.status(error.statusCode || 401).json({ error: error.message })
   }
@@ -86,6 +98,7 @@ export default async function handler(request, response) {
         },
       })),
       billing_address_collection: 'auto',
+      phone_number_collection: { enabled: true },
       shipping_address_collection: { allowed_countries: ['US', 'CA', 'GB'] },
       shipping_options: [{
         shipping_rate_data: {
@@ -100,12 +113,33 @@ export default async function handler(request, response) {
       }],
       automatic_tax: { enabled: false },
       customer_creation: 'always',
-      customer_email: signedInUser.email || undefined,
-      client_reference_id: signedInUser.uid,
-      metadata: { userId: signedInUser.uid },
+      customer_email: account.user.email || undefined,
+      client_reference_id: account.user.uid,
+      metadata: { userId: account.user.uid },
       allow_promotion_codes: true,
       success_url: `${siteUrl}/order-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${siteUrl}/checkout`,
+    })
+
+    await account.db.collection('fulfillmentOrders').doc(session.id).set({
+      stripeSessionId: session.id,
+      userId: account.user.uid,
+      customerEmail: account.user.email || '',
+      fulfillmentStatus: 'awaiting_payment',
+      items: resolved.map((item) => ({
+        productId: item.productId,
+        name: item.name,
+        image: item.image || '',
+        quantity: item.quantity,
+        customerUnitAmount: item.unitAmount,
+        sourcePrice: item.sourcePrice,
+        merchantName: item.merchantName,
+        merchantEmail: item.merchantEmail,
+        merchantContact: item.merchantContact,
+        purchaseUrl: item.purchaseUrl,
+      })),
+      createdAt: new Date(),
+      updatedAt: new Date(),
     })
 
     return response.status(200).json({ url: session.url })

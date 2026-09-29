@@ -51,7 +51,21 @@ export default async function handler(request, response) {
       updatedAt: FieldValue.serverTimestamp(),
     }
     if (paid) {
-      await account.db.collection('customers').doc(account.user.uid).collection('orders').doc(session.id).set(order, { merge: true })
+      await Promise.all([
+        account.db.collection('customers').doc(account.user.uid).collection('orders').doc(session.id).set(order, { merge: true }),
+        account.db.collection('fulfillmentOrders').doc(session.id).set({
+          customerName: session.customer_details?.name || shipping?.name || '',
+          customerEmail: session.customer_details?.email || account.user.email || '',
+          customerPhone: session.customer_details?.phone || '',
+          shippingAddress: order.shippingAddress,
+          paymentStatus: session.payment_status,
+          fulfillmentStatus: 'ready_to_purchase',
+          amountTotal: session.amount_total || 0,
+          currency: session.currency || 'usd',
+          paidAt: order.createdAt,
+          updatedAt: FieldValue.serverTimestamp(),
+        }, { merge: true }),
+      ])
     }
     return response.status(200).json({ paid, order: order.number, email: order.email })
   } catch (error) {
