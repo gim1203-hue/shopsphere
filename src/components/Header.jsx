@@ -139,6 +139,10 @@ export default function Header() {
               Shop All
             </NavLink>
 
+            <NavLink className={navClass} to="/support" onClick={() => setMenuOpen(false)}>
+              Support
+            </NavLink>
+
             {categories.map((category) => (
               <NavLink
                 key={category.name}
