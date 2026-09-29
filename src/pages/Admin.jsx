@@ -1,10 +1,10 @@
 import { createElement, useCallback, useEffect, useMemo, useState } from 'react'
-import { AlertTriangle, ExternalLink, Mail, MapPin, MessageCircle, Package, Plus, ReceiptText, RefreshCw, Search, ShieldCheck, Store, Users, Wallet, X } from 'lucide-react'
+import { AlertTriangle, ExternalLink, Mail, MapPin, MessageCircle, Package, Paperclip, Plus, ReceiptText, RefreshCw, Search, ShieldCheck, Store, Trash2, Users, Wallet, X } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useCatalog } from '../context/CatalogContext'
 import { formatCurrency } from '../utils/format'
 
-const emptyData = { customers: [], orders: [], products: [], messages: [], supportRequests: [], errorReports: [], customerNextCursor: null, orderNextCursor: null, errorNextCursor: null, integrations: null }
+const emptyData = { customers: [], orders: [], products: [], messages: [], inboundEmails: [], supportRequests: [], errorReports: [], customerNextCursor: null, orderNextCursor: null, errorNextCursor: null, integrations: null }
 const newProduct = () => ({ id: '', name: '', category: '', price: '', stock: '', image: '', description: '', color: '', measurements: '', sellerName: '', sellerContact: '', sellerEmail: '', featured: false })
 
 async function adminRequest(session, endpoint, { method = 'GET', body } = {}) {
@@ -47,6 +47,7 @@ export default function Admin() {
   const [messageCustomer, setMessageCustomer] = useState(null)
   const [messageForm, setMessageForm] = useState({ subject: '', text: '' })
   const [supportReplies, setSupportReplies] = useState({})
+  const [mailboxView, setMailboxView] = useState('new')
 
   const loadData = useCallback(async () => {
     setError('')
@@ -196,6 +197,21 @@ export default function Admin() {
     }
   }
 
+  async function updateInboundEmail(email, action) {
+    if (action === 'delete' && !window.confirm(`Delete “${email.subject}” from this dashboard?`)) return
+    setWorking(true)
+    setError('')
+    try {
+      await adminRequest(session, '/api/admin-inbound-email', { method: 'POST', body: { emailId: email.id, action } })
+      setNotice(action === 'delete' ? 'Email deleted from the store dashboard.' : action === 'mark_read' ? 'Email moved to Old.' : 'Email moved to New.')
+      await loadData()
+    } catch (actionError) {
+      setError(actionError.message)
+    } finally {
+      setWorking(false)
+    }
+  }
+
   if (loading && !data.customers.length && !error) {
     return <section className="container admin-loading">Loading store management…</section>
   }
@@ -275,7 +291,7 @@ export default function Admin() {
         </section>}
 
         {tab === 'orders' && <section className="admin-panel">
-          <div className="admin-panel-heading"><div><h2>Orders & payments</h2><p>Stripe Checkout sessions, receipts, refunds, and private fulfillment details.</p></div>{data.integrations.stripe && <a className="admin-small-button" href="https://dashboard.stripe.com/" target="_blank" rel="noreferrer">Open Stripe dashboard <ExternalLink size={14} /></a>}</div>
+          <div className="admin-panel-heading"><div><h2>Orders & payments</h2><p>Stripe Checkout sessions, receipts, refunds, and private fulfillment details.</p></div><div className="admin-heading-actions">{data.integrations.stripe && <a className="admin-small-button" href="https://dashboard.stripe.com/" target="_blank" rel="noreferrer">Open Stripe dashboard <ExternalLink size={14} /></a>}<a className="admin-small-button" href="https://resend.com/emails" target="_blank" rel="noreferrer">Open Resend <ExternalLink size={14} /></a></div></div>
           {!data.integrations.stripe && <p className="admin-alert">Add the Stripe secret key to the server environment to view and refund payments.</p>}
           <div className="admin-table-wrap"><table><thead><tr><th>Order</th><th>Customer</th><th>Date</th><th>Payment</th><th>Total</th><th>Action</th></tr></thead><tbody>
             {data.orders.map((order) => <tr key={order.id}><td><code>{order.id.slice(-12)}</code></td><td>{order.email || 'Guest checkout'}</td><td>{displayDate(order.createdAt)}</td><td><span className={`admin-status ${order.refunded ? 'refunded' : order.paymentStatus}`}>{order.refunded ? 'refunded' : order.paymentStatus}</span></td><td>{formatCurrency(order.amount / 100)}</td><td>{order.paymentStatus === 'paid' && !order.refunded ? <button type="button" className="admin-small-button danger" disabled={working} onClick={() => issueRefund(order)}>Full refund</button> : order.refunded ? 'Refund complete' : '—'}</td></tr>)}
@@ -306,12 +322,18 @@ export default function Admin() {
           </tbody></table></div>
         </section>}
 
-        {tab === 'messages' && <div className="admin-messages-grid">
-          <section className="admin-panel"><div className="admin-panel-heading"><div><h2>Customer email</h2><p>Replies are delivered to the support address.</p></div></div>
+        {tab === 'messages' && <>
+          <section className="admin-panel admin-inbox"><div className="admin-panel-heading"><div><h2>Customer inbox</h2><p>New emails received through Resend appear here automatically.</p></div><div className="admin-heading-actions"><a className="admin-small-button" href="https://resend.com/emails" target="_blank" rel="noreferrer">Open Resend <ExternalLink size={14} /></a><span className={`admin-status ${data.integrations.inboundEmail ? 'paid' : 'pending'}`}>{data.integrations.inboundEmail ? 'Receiving connected' : 'Webhook setup needed'}</span></div></div>
+            <div className="admin-inbox-filters" role="tablist" aria-label="Email categories"><button type="button" className={mailboxView === 'new' ? 'active' : ''} onClick={() => setMailboxView('new')}>New <span>{data.inboundEmails.filter((email) => email.status === 'new').length}</span></button><button type="button" className={mailboxView === 'old' ? 'active' : ''} onClick={() => setMailboxView('old')}>Old <span>{data.inboundEmails.filter((email) => email.status === 'old').length}</span></button></div>
+            <div className="admin-inbox-list">{data.inboundEmails.filter((email) => email.status === mailboxView).map((email) => <article className="admin-inbox-item" key={email.id}><header><div><strong>{email.subject}</strong><span>{email.from} · {displayDate(email.createdAt)}</span></div>{email.attachmentCount > 0 && <span className="admin-attachment"><Paperclip size={13} /> {email.attachmentCount}</span>}</header><p>{email.text}</p><footer><button type="button" className="admin-small-button" disabled={working} onClick={() => updateInboundEmail(email, mailboxView === 'new' ? 'mark_read' : 'mark_new')}>{mailboxView === 'new' ? 'Move to Old' : 'Move to New'}</button><button type="button" className="admin-small-button danger" disabled={working} onClick={() => updateInboundEmail(email, 'delete')}><Trash2 size={13} /> Delete</button></footer></article>)}{!data.inboundEmails.some((email) => email.status === mailboxView) && <p className="admin-empty">No {mailboxView} customer emails.</p>}</div>
+          </section>
+          <div className="admin-messages-grid">
+          <section className="admin-panel"><div className="admin-panel-heading"><div><h2>Write a customer</h2><p>Choose a customer from the Customers tab, then send an email here.</p></div></div>
             {messageCustomer ? <form className="admin-message-form" onSubmit={sendMessage}><label>To<input value={`${messageCustomer.name || 'Customer'} <${messageCustomer.email}>`} disabled /></label><label>Subject<input required maxLength="160" value={messageForm.subject} onChange={(event) => setMessageForm({ ...messageForm, subject: event.target.value })} /></label><label>Message<textarea required rows="8" maxLength="6000" value={messageForm.text} onChange={(event) => setMessageForm({ ...messageForm, text: event.target.value })} /></label><div><button type="button" className="admin-small-button" onClick={() => setMessageCustomer(null)}>Cancel</button><button type="submit" className="admin-primary" disabled={working}><Mail size={16} /> Send email</button></div></form> : <p className="admin-empty">Choose a customer from the Customers tab to write them.</p>}
           </section>
           <section className="admin-panel"><div className="admin-panel-heading"><h2>Sent messages</h2></div>{data.messages.map((message) => <article className="admin-message-item" key={message.id}><strong>{message.subject}</strong><span>{message.email} · {displayDate(message.createdAt)}</span><p>{message.text}</p></article>)}{!data.messages.length && <p className="admin-empty">Sent messages will appear here.</p>}</section>
-        </div>}
+          </div>
+        </>}
 
         {tab === 'errors' && <section className="admin-panel">
           <div className="admin-panel-heading"><div><h2>Error reports</h2><p>Browser crashes and server errors. Reports are retained for review.</p></div><span className="admin-status pending">{data.errorReports.filter((report) => report.status !== 'resolved').length} open</span></div>

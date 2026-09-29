@@ -18,10 +18,11 @@ export default async function handler(request, response) {
       const cursorDocument = await db.collection('errorReports').doc(errorCursor).get()
       if (cursorDocument.exists) errorsQuery = errorsQuery.startAfter(cursorDocument)
     }
-    const [usersPage, cartsSnapshot, messagesSnapshot, supportSnapshot, catalog, errorsSnapshot, refundsSnapshot] = await Promise.all([
+    const [usersPage, cartsSnapshot, messagesSnapshot, inboundSnapshot, supportSnapshot, catalog, errorsSnapshot, refundsSnapshot] = await Promise.all([
       auth.listUsers(100, customerCursor || undefined),
       db.collection('customerCarts').get(),
       db.collection('customerMessages').orderBy('createdAt', 'desc').limit(100).get(),
+      db.collection('inboundEmails').orderBy('createdAt', 'desc').limit(100).get(),
       db.collection('supportRequests').orderBy('createdAt', 'desc').limit(100).get(),
       loadCatalog(db),
       errorsQuery.limit(50).get(),
@@ -96,6 +97,19 @@ export default async function handler(request, response) {
         createdAt: message.createdAt?.toDate?.().toISOString() || null,
       }
     })
+    const inboundEmails = inboundSnapshot.docs.map((document) => {
+      const email = document.data()
+      return {
+        id: document.id,
+        from: email.from || 'Unknown sender',
+        to: Array.isArray(email.to) ? email.to : [],
+        subject: email.subject || '(No subject)',
+        text: email.text || '',
+        attachmentCount: Number(email.attachmentCount || 0),
+        status: email.status === 'old' ? 'old' : 'new',
+        createdAt: email.createdAt?.toDate?.().toISOString() || null,
+      }
+    })
     const supportRequests = supportSnapshot.docs.map((document) => {
       const ticket = document.data()
       return {
@@ -130,6 +144,7 @@ export default async function handler(request, response) {
       orders,
       products: catalog,
       messages,
+      inboundEmails,
       supportRequests,
       errorReports,
       customerNextCursor: usersPage.pageToken || null,
@@ -139,6 +154,7 @@ export default async function handler(request, response) {
         stripe: Boolean(process.env.STRIPE_SECRET_KEY),
         stripeWebhook: Boolean(process.env.STRIPE_WEBHOOK_SECRET),
         email: Boolean(process.env.RESEND_API_KEY && process.env.FROM_EMAIL),
+        inboundEmail: Boolean(process.env.RESEND_WEBHOOK_SECRET && (process.env.RESEND_INBOUND_API_KEY || process.env.RESEND_API_KEY)),
         fulfillmentEmail: Boolean(process.env.RESEND_API_KEY && process.env.FROM_EMAIL && (process.env.FULFILLMENT_EMAIL || process.env.SUPPORT_REPLY_TO)),
       },
     })
