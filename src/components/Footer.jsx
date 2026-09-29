@@ -26,12 +26,12 @@ export default function Footer() {
         {newsletterError && <span className="newsletter-success newsletter-error" role="alert">{newsletterError}</span>}
       </div>
       <div className="container footer-grid">
-        <div><Link className="logo footer-logo" to="/">Ask<span>Khan</span><i>.</i></Link><p>A broad marketplace for everyday goods, vehicles, business supplies, and more.</p></div>
+        <div><Link className="logo footer-logo" to="/">Stop<span>Shop</span><i>.</i></Link><p>A broad marketplace for everyday goods, vehicles, business supplies, and more.</p></div>
         <div><h3>Shop</h3><Link to="/shop">All products</Link><Link to="/shop?category=Cars%20%26%20Trucks">Cars & trucks</Link><Link to="/shop?category=Motorcycles%20%26%20Powersports">Motorcycles</Link><Link to="/shop?category=Electronics%20%26%20Computers">Electronics</Link></div>
         <div><h3>Help</h3><Link to="/support">Merchant support</Link><Link to="/account#orders">Orders & invoices</Link><Link to="/account#addresses">Shipping addresses</Link><Link to="/legal/returns">Returns & cancellations</Link></div>
         <div><h3>Contact</h3><a href="mailto:support@homedepo.tech"><Mail size={17} /> Email support</a><a href="tel:+13477511551"><Phone size={17} /> Call support</a><a href="sms:+13477511551"><MessageSquareText size={17} /> Text support</a><Link to="/legal/accessibility">Accessibility help</Link></div>
       </div>
-      <div className="container footer-bottom"><span>© {new Date().getFullYear()} AskKhan</span><span><Link to="/legal/privacy">Privacy</Link> · <Link to="/legal/terms">Terms</Link> · <Link to="/legal/accessibility">Accessibility</Link> · <Link to="/legal/returns">Returns</Link></span><span>Merchant support available</span></div>
+      <div className="container footer-bottom"><span>© {new Date().getFullYear()} StopShop</span><span><Link to="/legal/privacy">Privacy</Link> · <Link to="/legal/terms">Terms</Link> · <Link to="/legal/accessibility">Accessibility</Link> · <Link to="/legal/returns">Returns</Link></span><span>Merchant support available</span></div>
     </footer>
   )
 }

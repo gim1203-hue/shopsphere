@@ -270,9 +270,9 @@ export default function Shop() {
   return (
     <>
       <PageIntro
-        eyebrow="ASKKHAN MARKETPLACE"
+        eyebrow="STOPSHOP MARKETPLACE"
         title="Shop everything."
-        text="Search products across the AskKhan marketplace."
+        text="Search products across the StopShop marketplace."
       />
 
       <section className="container shop-layout">
@@ -351,7 +351,7 @@ export default function Shop() {
                 onChange={(event) =>
                   { setParam('q', event.target.value); setSuggestionsOpen(true) }
                 }
-                placeholder="Search AskKhan..."
+                placeholder="Search StopShop..."
                 aria-autocomplete="list"
                 aria-expanded={suggestionsOpen && matchingSuggestions.length > 0}
               />
@@ -430,7 +430,7 @@ export default function Shop() {
 
               <p>
                 This product is not in
-                the current AskKhan
+                the current StopShop
                 catalog yet.
               </p>
 

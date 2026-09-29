@@ -86,7 +86,7 @@ export default function Header() {
   return (
     <>
       <div className="announcement">
-        AskKhan Marketplace
+        StopShop Marketplace
         <span>•</span>
         Search everything in our store
       </div>
@@ -107,9 +107,9 @@ export default function Header() {
           <Link
             to="/"
             className="logo"
-            aria-label="AskKhan home"
+            aria-label="StopShop home"
           >
-            Ask<span>Khan</span><i>.</i>
+            Stop<span>Shop</span><i>.</i>
           </Link>
 
           <nav
@@ -140,7 +140,7 @@ export default function Header() {
             </NavLink>
 
             <NavLink className={navClass} to="/support" onClick={() => setMenuOpen(false)}>
-              Support
+              Customer Service
             </NavLink>
 
             {categories.map((category) => (
@@ -165,7 +165,7 @@ export default function Header() {
               onClick={() =>
                 setSearchOpen(!searchOpen)
               }
-              aria-label="Search AskKhan"
+              aria-label="Search StopShop"
               type="button"
             >
               <Search />
@@ -176,7 +176,7 @@ export default function Header() {
               onClick={() =>
                 setSearchOpen(!searchOpen)
               }
-              aria-label="Search AskKhan"
+              aria-label="Search StopShop"
               type="button"
             >
               <Search />
@@ -237,8 +237,8 @@ export default function Header() {
                 value={query}
                 onFocus={() => setSuggestionsOpen(true)}
                 onChange={(event) => { setQuery(event.target.value); setSuggestionsOpen(true) }}
-                placeholder="Search AskKhan..."
-                aria-label="Search AskKhan"
+                placeholder="Search StopShop..."
+                aria-label="Search StopShop"
                 aria-autocomplete="list"
                 aria-expanded={suggestionsOpen && suggestions.length > 0}
               />

@@ -39,11 +39,11 @@ export default function Checkout() {
 
   return (
     <section className="checkout-page">
-      <div className="container checkout-head"><Link to="/cart"><ArrowLeft size={16} /> Back to bag</Link><span className="logo">Ask<span>Khan</span><i>.</i></span><span><LockKeyhole size={15} /> Secure checkout</span></div>
+      <div className="container checkout-head"><Link to="/cart"><ArrowLeft size={16} /> Back to bag</Link><span className="logo">Stop<span>Shop</span><i>.</i></span><span><LockKeyhole size={15} /> Secure checkout</span></div>
       <div className="container checkout-grid">
         <div className="checkout-form">
           <span className="eyebrow">Secure payment</span><h1>Checkout.</h1>
-          <fieldset><legend>Payment and delivery</legend><p className="demo-note">Stripe securely collects your email, delivery address, and payment information. AskKhan never receives or stores your card number.</p></fieldset>
+          <fieldset><legend>Payment and delivery</legend><p className="demo-note">Stripe securely collects your email, delivery address, and payment information. StopShop never receives or stores your card number.</p></fieldset>
           {!session && <p className="demo-note">Please <Link to="/login">sign in</Link> before paying. This keeps your order, shipment dates, and delivery address in your account.</p>}
           {error && <p className="checkout-error" role="alert">{error}</p>}
           <button className="button dark place-order" type="button" onClick={beginCheckout} disabled={loading}><LockKeyhole size={16} /> {loading ? 'Opening secure checkout…' : `Pay securely · ${formatCurrency(subtotal + shipping)}`}</button>

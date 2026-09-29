@@ -60,7 +60,7 @@ const rawProducts = [
   {
     id: 'home-accent-chair-1',
     name: 'Solid Wood Accent Chair',
-    brand: 'AskKhan Home',
+    brand: 'StopShop Home',
     category: 'Furniture & Home',
     subcategory: 'Living Room Furniture',
     sourcePrice: 189.99,
@@ -76,7 +76,7 @@ const rawProducts = [
   {
     id: 'toy-building-set-1',
     name: 'Creative STEM Building Set',
-    brand: 'AskKhan Play',
+    brand: 'StopShop Play',
     category: 'Toys & Games',
     subcategory: 'Building Toys',
     sourcePrice: 39.99,
@@ -92,7 +92,7 @@ const rawProducts = [
   {
     id: 'sports-dumbbell-1',
     name: 'Adjustable Home Dumbbell Set',
-    brand: 'AskKhan Fitness',
+    brand: 'StopShop Fitness',
     category: 'Sports & Outdoors',
     subcategory: 'Fitness Equipment',
     sourcePrice: 149.99,
@@ -140,7 +140,7 @@ const rawProducts = [
   {
     id: 'tool-drill-1',
     name: '20V Cordless Drill Driver Kit',
-    brand: 'AskKhan Tools',
+    brand: 'StopShop Tools',
     category: 'Tools & Hardware',
     subcategory: 'Power Tools',
     sourcePrice: 79.99,
@@ -171,7 +171,7 @@ const rawProducts = [
   {
     id: 'tool-hammer-drill-1',
     name: 'Heavy Duty Hammer Drill',
-    brand: 'AskKhan Tools',
+    brand: 'StopShop Tools',
     category: 'Tools & Hardware',
     subcategory: 'Power Tools',
     sourcePrice: 119.99,
@@ -200,7 +200,7 @@ const rawProducts = [
   {
     id: 'tool-impact-1',
     name: '20V Cordless Impact Driver',
-    brand: 'AskKhan Tools',
+    brand: 'StopShop Tools',
     category: 'Tools & Hardware',
     subcategory: 'Power Tools',
     sourcePrice: 99.99,
@@ -224,7 +224,7 @@ const rawProducts = [
   {
     id: 'tool-circular-saw-1',
     name: '7-1/4 in Circular Saw',
-    brand: 'AskKhan Tools',
+    brand: 'StopShop Tools',
     category: 'Tools & Hardware',
     subcategory: 'Power Tools',
     sourcePrice: 129.99,
@@ -247,7 +247,7 @@ const rawProducts = [
   {
     id: 'tool-miter-saw-1',
     name: '12 in Sliding Compound Miter Saw',
-    brand: 'AskKhan Tools',
+    brand: 'StopShop Tools',
     category: 'Tools & Hardware',
     subcategory: 'Power Tools',
     sourcePrice: 349.99,
@@ -265,7 +265,7 @@ const rawProducts = [
   {
     id: 'tool-grinder-1',
     name: '4-1/2 in Angle Grinder',
-    brand: 'AskKhan Tools',
+    brand: 'StopShop Tools',
     category: 'Tools & Hardware',
     subcategory: 'Power Tools',
     sourcePrice: 69.99,
@@ -283,7 +283,7 @@ const rawProducts = [
   {
     id: 'screw-drywall-1',
     name: 'Drywall Screws 1-5/8 in 1 lb Box',
-    brand: 'AskKhan Hardware',
+    brand: 'StopShop Hardware',
     category: 'Tools & Hardware',
     subcategory: 'Screws & Fasteners',
     sourcePrice: 9.99,
@@ -301,7 +301,7 @@ const rawProducts = [
   {
     id: 'screw-deck-1',
     name: 'Exterior Deck Screws 3 in 5 lb Box',
-    brand: 'AskKhan Hardware',
+    brand: 'StopShop Hardware',
     category: 'Tools & Hardware',
     subcategory: 'Screws & Fasteners',
     sourcePrice: 34.99,
@@ -319,7 +319,7 @@ const rawProducts = [
   {
     id: 'screw-concrete-1',
     name: 'Concrete Masonry Screws',
-    brand: 'AskKhan Hardware',
+    brand: 'StopShop Hardware',
     category: 'Tools & Hardware',
     subcategory: 'Screws & Fasteners',
     sourcePrice: 19.99,
@@ -337,7 +337,7 @@ const rawProducts = [
   {
     id: 'material-concrete-1',
     name: '80 lb Concrete Mix',
-    brand: 'AskKhan Building Supply',
+    brand: 'StopShop Building Supply',
     category: 'Construction Materials',
     subcategory: 'Concrete & Cement',
     sourcePrice: 7.49,
@@ -355,7 +355,7 @@ const rawProducts = [
   {
     id: 'material-lumber-1',
     name: '2 in x 4 in x 8 ft Construction Lumber',
-    brand: 'AskKhan Building Supply',
+    brand: 'StopShop Building Supply',
     category: 'Construction Materials',
     subcategory: 'Lumber',
     sourcePrice: 5.98,
@@ -373,7 +373,7 @@ const rawProducts = [
   {
     id: 'material-plywood-1',
     name: '3/4 in 4 ft x 8 ft Plywood Sheet',
-    brand: 'AskKhan Building Supply',
+    brand: 'StopShop Building Supply',
     category: 'Construction Materials',
     subcategory: 'Plywood',
     sourcePrice: 44.99,
@@ -391,7 +391,7 @@ const rawProducts = [
   {
     id: 'material-drywall-1',
     name: '1/2 in 4 ft x 8 ft Drywall Panel',
-    brand: 'AskKhan Building Supply',
+    brand: 'StopShop Building Supply',
     category: 'Construction Materials',
     subcategory: 'Drywall',
     sourcePrice: 15.99,
@@ -409,7 +409,7 @@ const rawProducts = [
   {
     id: 'plumbing-pvc-1',
     name: 'PVC Pipe 2 in x 10 ft',
-    brand: 'AskKhan Plumbing',
+    brand: 'StopShop Plumbing',
     category: 'Plumbing',
     subcategory: 'Pipe',
     sourcePrice: 18.99,
@@ -427,7 +427,7 @@ const rawProducts = [
   {
     id: 'electrical-wire-1',
     name: '12/2 Electrical Wire 250 ft',
-    brand: 'AskKhan Electrical',
+    brand: 'StopShop Electrical',
     category: 'Electrical',
     subcategory: 'Wire',
     sourcePrice: 129.99,
@@ -445,7 +445,7 @@ const rawProducts = [
   {
     id: 'commercial-table-1',
     name: 'Commercial 6 ft Folding Table',
-    brand: 'AskKhan Business',
+    brand: 'StopShop Business',
     category: 'Commercial Furniture',
     subcategory: 'Tables',
     sourcePrice: 89.99,
@@ -463,7 +463,7 @@ const rawProducts = [
   {
     id: 'commercial-chair-1',
     name: 'Commercial Stackable Chair',
-    brand: 'AskKhan Business',
+    brand: 'StopShop Business',
     category: 'Commercial Furniture',
     subcategory: 'Chairs',
     sourcePrice: 49.99,
@@ -481,7 +481,7 @@ const rawProducts = [
   {
     id: 'office-chair-1',
     name: 'Ergonomic Business Office Chair',
-    brand: 'AskKhan Business',
+    brand: 'StopShop Business',
     category: 'Office & Business',
     subcategory: 'Office Chairs',
     sourcePrice: 179.99,
@@ -499,7 +499,7 @@ const rawProducts = [
   {
     id: 'bed-queen-1',
     name: 'Queen Platform Bed Frame',
-    brand: 'AskKhan Home',
+    brand: 'StopShop Home',
     category: 'Mattresses & Bedroom',
     subcategory: 'Beds',
     sourcePrice: 249.99,
@@ -517,7 +517,7 @@ const rawProducts = [
   {
     id: 'mattress-queen-1',
     name: 'Queen 12 in Memory Foam Mattress',
-    brand: 'AskKhan Sleep',
+    brand: 'StopShop Sleep',
     category: 'Mattresses & Bedroom',
     subcategory: 'Mattresses',
     sourcePrice: 399.99,
@@ -535,7 +535,7 @@ const rawProducts = [
   {
     id: 'closet-1',
     name: 'Modular Closet Organizer System',
-    brand: 'AskKhan Home',
+    brand: 'StopShop Home',
     category: 'Closets & Storage',
     subcategory: 'Closet Systems',
     sourcePrice: 299.99,
@@ -553,7 +553,7 @@ const rawProducts = [
   {
     id: 'phone-1',
     name: '5G Unlocked Smartphone 256GB',
-    brand: 'AskKhan Mobile',
+    brand: 'StopShop Mobile',
     category: 'Phones & Tablets',
     subcategory: 'Smartphones',
     sourcePrice: 699.99,
@@ -571,7 +571,7 @@ const rawProducts = [
   {
     id: 'laptop-1',
     name: '15.6 in Business Laptop',
-    brand: 'AskKhan Computing',
+    brand: 'StopShop Computing',
     category: 'Electronics & Computers',
     subcategory: 'Laptops',
     sourcePrice: 799.99,
@@ -589,7 +589,7 @@ const rawProducts = [
   {
     id: 'gaming-laptop-1',
     name: '16 in Gaming Laptop',
-    brand: 'AskKhan Gaming',
+    brand: 'StopShop Gaming',
     category: 'Gaming',
     subcategory: 'Gaming Computers',
     sourcePrice: 1299.99,
@@ -607,7 +607,7 @@ const rawProducts = [
   {
     id: 'game-console-1',
     name: '4K Gaming Console',
-    brand: 'AskKhan Gaming',
+    brand: 'StopShop Gaming',
     category: 'Gaming',
     subcategory: 'Consoles',
     sourcePrice: 499.99,
@@ -625,7 +625,7 @@ const rawProducts = [
   {
     id: 'gaming-chair-1',
     name: 'Ergonomic Gaming Chair',
-    brand: 'AskKhan Gaming',
+    brand: 'StopShop Gaming',
     category: 'Gaming',
     subcategory: 'Gaming Furniture',
     sourcePrice: 199.99,
@@ -643,7 +643,7 @@ const rawProducts = [
   {
     id: 'tv-1',
     name: '55 in 4K Smart TV',
-    brand: 'AskKhan Electronics',
+    brand: 'StopShop Electronics',
     category: 'Electronics & Computers',
     subcategory: 'Televisions',
     sourcePrice: 399.99,
@@ -661,7 +661,7 @@ const rawProducts = [
   {
     id: 'refrigerator-1',
     name: 'French Door Refrigerator',
-    brand: 'AskKhan Appliances',
+    brand: 'StopShop Appliances',
     category: 'Appliances',
     subcategory: 'Refrigerators',
     sourcePrice: 1499.99,
@@ -679,7 +679,7 @@ const rawProducts = [
   {
     id: 'washer-1',
     name: 'High Efficiency Washing Machine',
-    brand: 'AskKhan Appliances',
+    brand: 'StopShop Appliances',
     category: 'Appliances',
     subcategory: 'Laundry',
     sourcePrice: 699.99,
@@ -697,7 +697,7 @@ const rawProducts = [
   {
     id: 'auto-toolset-1',
     name: 'Mechanics Tool Set 200 Piece',
-    brand: 'AskKhan Auto',
+    brand: 'StopShop Auto',
     category: 'Automotive',
     subcategory: 'Automotive Tools',
     sourcePrice: 169.99,
@@ -715,7 +715,7 @@ const rawProducts = [
   {
     id: 'pressure-washer-1',
     name: 'Electric Pressure Washer',
-    brand: 'AskKhan Outdoor',
+    brand: 'StopShop Outdoor',
     category: 'Garden & Patio',
     subcategory: 'Outdoor Power Equipment',
     sourcePrice: 199.99,
@@ -758,17 +758,17 @@ export const products = rawProducts.map((product) => {
     sellerName:
       product.sellerName ||
       product.brand ||
-      'AskKhan Marketplace Seller',
+      'StopShop Marketplace Seller',
 
     sellerContact:
       product.sellerContact ||
-      'Contact through AskKhan Merchant Support',
+      'Contact through StopShop Merchant Support',
 
     sellerEmail: product.sellerEmail || '',
 
     brand:
       product.brand ||
-      'AskKhan Marketplace',
+      'StopShop Marketplace',
 
     tags:
       product.tags ||

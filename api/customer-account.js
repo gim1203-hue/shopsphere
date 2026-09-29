@@ -1,5 +1,6 @@
 import { FieldValue } from 'firebase-admin/firestore'
 import { requireSignedInUser, sendApiError } from './_lib/firebaseAdmin.js'
+import { invoiceNumber } from './_lib/order.js'
 
 const clean = (value, limit = 120) => String(value || '').trim().slice(0, limit)
 
@@ -18,6 +19,7 @@ export default async function handler(request, response) {
         return {
           id: document.id,
           ...data,
+          invoiceNumber: data.invoiceNumber || invoiceNumber(document.id, data.createdAt?.toMillis?.() || data.createdAt || Date.now()),
           createdAt: data.createdAt?.toDate?.().toISOString() || data.createdAt || null,
           estimatedShipDate: data.estimatedShipDate?.toDate?.().toISOString() || data.estimatedShipDate || null,
           estimatedDeliveryDate: data.estimatedDeliveryDate?.toDate?.().toISOString() || data.estimatedDeliveryDate || null,

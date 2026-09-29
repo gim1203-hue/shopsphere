@@ -1,7 +1,7 @@
 import { FieldValue } from 'firebase-admin/firestore'
 import { randomUUID } from 'node:crypto'
 import { requireAdmin, sendApiError } from './_lib/firebaseAdmin.js'
-import { getAskKhanPrice } from '../src/utils/pricing.js'
+import { getStopShopPrice } from '../src/utils/pricing.js'
 
 export default async function handler(request, response) {
   if (request.method !== 'POST') {
@@ -37,14 +37,14 @@ export default async function handler(request, response) {
       name,
       category,
       image,
-      price: getAskKhanPrice(price),
+      price: getStopShopPrice(price),
       sourcePrice: Number(price.toFixed(2)),
       stock,
       description: String(input.description || '').trim().slice(0, 1500),
       color: String(input.color || '').trim().slice(0, 80),
       measurements: String(input.measurements || '').trim().slice(0, 500) || 'Exact measurements were not provided by the seller.',
-      sellerName: String(input.sellerName || '').trim().slice(0, 160) || 'AskKhan Marketplace Seller',
-      sellerContact: String(input.sellerContact || '').trim().slice(0, 300) || 'Contact through AskKhan Merchant Support',
+      sellerName: String(input.sellerName || '').trim().slice(0, 160) || 'StopShop Marketplace Seller',
+      sellerContact: String(input.sellerContact || '').trim().slice(0, 300) || 'Contact through StopShop Merchant Support',
       sellerEmail: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(input.sellerEmail || '').trim())
         ? String(input.sellerEmail).trim().toLowerCase().slice(0, 254)
         : '',

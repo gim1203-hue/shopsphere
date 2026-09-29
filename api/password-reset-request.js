@@ -47,7 +47,7 @@ export default async function handler(request, response) {
           from: process.env.FROM_EMAIL,
           to: [adminEmail],
           subject: `Password reset requested by ${email}`,
-          text: `${customer.displayName || 'A customer'} requested help resetting the password for ${email}.\n\nOpen the Customers section of the HomeDepo admin dashboard and press “Send reset link” beside request ${resetRequest.id}.`,
+          text: `${customer.displayName || 'A customer'} requested help resetting the password for ${email}.\n\nOpen the Customers section of the StopShop admin dashboard and press “Send reset link” beside request ${resetRequest.id}.`,
         }),
       }).catch(() => {})
     }

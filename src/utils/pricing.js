@@ -1,4 +1,4 @@
-export function getAskKhanPrice(sourcePrice) {
+export function getStopShopPrice(sourcePrice) {
   const price = Number(sourcePrice)
 
   if (!Number.isFinite(price) || price < 0) {
@@ -16,7 +16,7 @@ export function getProductPrice(product = {}) {
 
   const sourcePrice = Number(product.sourcePrice)
   if (Number.isFinite(sourcePrice) && sourcePrice >= 0) {
-    return getAskKhanPrice(sourcePrice)
+    return getStopShopPrice(sourcePrice)
   }
 
   const listedPrice = Number(product.price)

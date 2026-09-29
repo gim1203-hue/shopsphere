@@ -27,7 +27,7 @@ export default function ProductCard({
       0
   )
 
-  // Customer price = source price + your Ask Khan markup
+  // Customer price = source price + your StopShop markup
   const askKhanPrice = getProductPrice(product)
 
   // Genuine MSRP/list/original price only

@@ -2,6 +2,7 @@ import Stripe from 'stripe'
 import { FieldValue, Timestamp } from 'firebase-admin/firestore'
 import { requireSignedInUser } from './_lib/firebaseAdmin.js'
 import { emailAddress } from './_lib/email.js'
+import { invoiceNumber } from './_lib/order.js'
 
 const stripe = process.env.STRIPE_SECRET_KEY
   ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2026-02-25.clover' })
@@ -33,6 +34,7 @@ export default async function handler(request, response) {
     const order = {
       stripeSessionId: session.id,
       number: session.id.slice(-10).toUpperCase(),
+      invoiceNumber: invoiceNumber(session.id, session.created),
       status: 'processing',
       paymentStatus: session.payment_status,
       email: session.customer_details?.email || account.user.email || null,
@@ -45,7 +47,7 @@ export default async function handler(request, response) {
         amountTotal: item.amount_total || 0,
       })),
       shippingAddress: shipping ? { name: shipping.name || '', ...shipping.address } : null,
-      shipsFrom: 'AskKhan fulfillment network, United States',
+      shipsFrom: 'StopShop fulfillment network, United States',
       createdAt: Timestamp.fromMillis((session.created || Math.floor(Date.now() / 1000)) * 1000),
       estimatedShipDate: Timestamp.fromMillis(Date.now() + 2 * 86400000),
       estimatedDeliveryDate: Timestamp.fromMillis(Date.now() + 7 * 86400000),
@@ -60,6 +62,7 @@ export default async function handler(request, response) {
           customerPhone: session.customer_details?.phone || '',
           shippingAddress: order.shippingAddress,
           paymentStatus: session.payment_status,
+          invoiceNumber: order.invoiceNumber,
           fulfillmentStatus: 'ready_to_purchase',
           amountTotal: session.amount_total || 0,
           currency: session.currency || 'usd',

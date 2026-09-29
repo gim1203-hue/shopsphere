@@ -226,7 +226,7 @@ export default function ProductDetails() {
 
               <div className="product-facts">
                 <div><Ruler /><span><small>Measurements / dimensions</small><strong>{product.measurements || 'Exact measurements were not provided by the seller.'}</strong></span></div>
-                <div><Store /><span><small>Seller</small><strong>{product.sellerName || product.brand || 'AskKhan Marketplace Seller'}</strong><em>{product.sellerEmail || product.sellerContact || 'Contact through AskKhan Merchant Support'}</em></span></div>
+                <div><Store /><span><small>Seller</small><strong>{product.sellerName || product.brand || 'StopShop Marketplace Seller'}</strong><em>{product.sellerEmail || product.sellerContact || 'Contact through StopShop Merchant Support'}</em></span></div>
               </div>
 
               <h3>Additional details</h3>

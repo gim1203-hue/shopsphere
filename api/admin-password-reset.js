@@ -29,8 +29,8 @@ export default async function handler(request, response) {
         from: process.env.FROM_EMAIL,
         to: [customerEmail],
         reply_to: emailAddress(process.env.SUPPORT_REPLY_TO) || undefined,
-        subject: 'Reset your HomeDepo password',
-        text: `A password reset was requested for your HomeDepo account.\n\nChoose a new password using this secure one-time link:\n${resetLink}\n\nIf you did not request this, you can ignore this email. Your password has not been changed.\n\nSupport: support@homedepo.tech or (347) 751-1551`,
+        subject: 'Reset your StopShop password',
+        text: `A password reset was requested for your StopShop account.\n\nChoose a new password using this secure one-time link:\n${resetLink}\n\nIf you did not request this, you can ignore this email. Your password has not been changed.\n\nSupport: support@homedepo.tech or (347) 751-1551`,
       }),
     })
     const providerResult = await emailResponse.json().catch(() => ({}))
@@ -50,7 +50,7 @@ export default async function handler(request, response) {
       db.collection('customerMessages').add({
         uid,
         email: customerEmail,
-        subject: 'Reset your HomeDepo password',
+        subject: 'Reset your StopShop password',
         text: 'A secure, one-time password reset link was sent. The link is intentionally hidden from the admin dashboard.',
         resendId: providerResult.id || '',
         adminUid: admin.uid,

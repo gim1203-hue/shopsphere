@@ -1,5 +1,5 @@
 // Product search requests go through the
-// AskKhan server API.
+// StopShop server API.
 //
 // Keep supplier/API credentials on the server.
 // Never expose private API keys in React.

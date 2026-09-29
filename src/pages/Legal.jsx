@@ -2,11 +2,11 @@ import { Link, useParams } from 'react-router-dom'
 import PageIntro from '../components/PageIntro'
 
 const pages = {
-  privacy: { title: 'Privacy policy', eyebrow: 'Your information', intro: 'How AskKhan handles account, order, payment, and support information.', sections: [
+  privacy: { title: 'Privacy policy', eyebrow: 'Your information', intro: 'How StopShop handles account, order, payment, and support information.', sections: [
     ['Information we collect', 'We collect information you provide when creating an account, placing an order, saving an address, or contacting support. Product searches and basic technical error information may also be processed to operate and improve the marketplace.'],
     ['How information is used', 'Information is used to authenticate accounts, fulfill orders, provide invoices and shipping updates, prevent fraud, answer support requests, and maintain the service.'],
     ['Service providers', 'Firebase provides authentication and database services, Stripe processes payments, Vercel hosts the application, and configured email and product-search providers support communications and catalog discovery. Each provider processes information under its own terms.'],
-    ['Your choices', 'You may update saved addresses, request order support, and ask for account or data assistance through Merchant Support. Payment card numbers are handled by Stripe and are not stored by AskKhan.'],
+    ['Your choices', 'You may update saved addresses, request order support, and ask for account or data assistance through Merchant Support. Payment card numbers are handled by Stripe and are not stored by StopShop.'],
   ] },
   terms: { title: 'Terms of use', eyebrow: 'Marketplace terms', intro: 'Rules for accessing listings, accounts, purchases, vehicles, and merchant services.', sections: [
     ['Marketplace listings', 'Inventory, prices, availability, delivery estimates, and seller information may change. A listing is not a guarantee until payment and order confirmation are complete.'],
@@ -14,7 +14,7 @@ const pages = {
     ['Orders and cancellations', 'Submit cancellation, return, refund, or delivery requests through Merchant Support. A request is not complete until confirmed by the merchant.'],
     ['Acceptable use', 'Do not misuse accounts, attempt unauthorized access, bypass network or security controls, submit fraudulent payments, scrape restricted services, or list unlawful goods.'],
   ] },
-  accessibility: { title: 'Accessibility', eyebrow: 'Access for everyone', intro: 'AskKhan is designed for keyboard, touch, screen-reader, mobile, tablet, and desktop access.', sections: [
+  accessibility: { title: 'Accessibility', eyebrow: 'Access for everyone', intro: 'StopShop is designed for keyboard, touch, screen-reader, mobile, tablet, and desktop access.', sections: [
     ['Our approach', 'The storefront uses semantic controls, visible labels, responsive layouts, keyboard-accessible navigation, text alternatives for meaningful images, and scalable browser text.'],
     ['Compatibility', 'We aim to support current versions of Chrome, Edge, Firefox, and Safari on major desktop and mobile operating systems. Organization-managed browsers may have restrictions outside our control.'],
     ['Get assistance', 'If any page or action is difficult to use, contact Merchant Support and describe the page, device, browser, and assistance you need.'],

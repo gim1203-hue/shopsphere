@@ -49,8 +49,8 @@ function mergeProducts(
     askKhanPrice: customerPrice,
     description: product.description || 'No additional description was provided by the seller.',
     measurements: product.measurements || 'Exact measurements were not provided by the seller.',
-    sellerName: product.sellerName || product.brand || 'AskKhan Marketplace Seller',
-    sellerContact: product.sellerContact || 'Contact through AskKhan Merchant Support',
+    sellerName: product.sellerName || product.brand || 'StopShop Marketplace Seller',
+    sellerContact: product.sellerContact || 'Contact through StopShop Merchant Support',
     sellerEmail: product.sellerEmail || '',
   }})
 }

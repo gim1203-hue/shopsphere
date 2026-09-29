@@ -1,6 +1,7 @@
 import Stripe from 'stripe'
 import { FieldValue, Timestamp } from 'firebase-admin/firestore'
 import { getFirebaseServices, recordErrorReport } from './_lib/firebaseAdmin.js'
+import { invoiceNumber } from './_lib/order.js'
 
 export const config = { api: { bodyParser: false } }
 
@@ -29,6 +30,7 @@ async function savePaidOrder(sessionId) {
   const order = {
     stripeSessionId: session.id,
     number: session.id.slice(-10).toUpperCase(),
+    invoiceNumber: invoiceNumber(session.id, session.created),
     status: 'processing',
     paymentStatus: session.payment_status,
     email: session.customer_details?.email || session.customer_email || '',
@@ -41,7 +43,7 @@ async function savePaidOrder(sessionId) {
       amountTotal: item.amount_total || 0,
     })),
     shippingAddress: shipping ? { name: shipping.name || '', ...shipping.address } : null,
-    shipsFrom: 'AskKhan fulfillment network, United States',
+    shipsFrom: 'StopShop fulfillment network, United States',
     createdAt: paidAt,
     estimatedShipDate,
     estimatedDeliveryDate,
@@ -57,6 +59,7 @@ async function savePaidOrder(sessionId) {
       customerPhone: session.customer_details?.phone || '',
       shippingAddress: order.shippingAddress,
       paymentStatus: session.payment_status,
+      invoiceNumber: order.invoiceNumber,
       fulfillmentStatus: 'ready_to_purchase',
       amountTotal: session.amount_total || 0,
       currency: session.currency || 'usd',
