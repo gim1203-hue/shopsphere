@@ -16,7 +16,10 @@ export default async function handler(request, response) {
     }
     const reference = db.collection('inboundEmails').doc(emailId)
     if (action === 'delete') {
-      await reference.delete()
+      await Promise.all([
+        reference.delete(),
+        db.collection('hiddenAdminEmails').doc(emailId).set({ source: 'inbound', hiddenAt: FieldValue.serverTimestamp() }, { merge: true }),
+      ])
       return response.status(200).json({ deleted: true })
     }
     await reference.set({
@@ -28,4 +31,3 @@ export default async function handler(request, response) {
     return sendApiError(response, error)
   }
 }
-

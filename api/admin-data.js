@@ -1,4 +1,5 @@
 import Stripe from 'stripe'
+import { Resend } from 'resend'
 import { loadCatalog } from './_lib/catalog.js'
 import { requireAdmin, sendApiError } from './_lib/firebaseAdmin.js'
 
@@ -18,11 +19,12 @@ export default async function handler(request, response) {
       const cursorDocument = await db.collection('errorReports').doc(errorCursor).get()
       if (cursorDocument.exists) errorsQuery = errorsQuery.startAfter(cursorDocument)
     }
-    const [usersPage, cartsSnapshot, messagesSnapshot, inboundSnapshot, supportSnapshot, catalog, errorsSnapshot, refundsSnapshot] = await Promise.all([
+    const [usersPage, cartsSnapshot, messagesSnapshot, inboundSnapshot, hiddenEmailsSnapshot, supportSnapshot, catalog, errorsSnapshot, refundsSnapshot] = await Promise.all([
       auth.listUsers(100, customerCursor || undefined),
       db.collection('customerCarts').get(),
       db.collection('customerMessages').orderBy('createdAt', 'desc').limit(100).get(),
       db.collection('inboundEmails').orderBy('createdAt', 'desc').limit(100).get(),
+      db.collection('hiddenAdminEmails').get(),
       db.collection('supportRequests').orderBy('createdAt', 'desc').limit(100).get(),
       loadCatalog(db),
       errorsQuery.limit(50).get(),
@@ -86,7 +88,8 @@ export default async function handler(request, response) {
       orderNextCursor = sessions.has_more ? sessions.data.at(-1)?.id || null : null
     }
 
-    const messages = messagesSnapshot.docs.map((document) => {
+    const hiddenEmailIds = new Set(hiddenEmailsSnapshot.docs.map((document) => document.id))
+    const localMessages = messagesSnapshot.docs.map((document) => {
       const message = document.data()
       return {
         id: document.id,
@@ -94,10 +97,13 @@ export default async function handler(request, response) {
         email: message.email,
         subject: message.subject,
         text: message.text,
+        resendId: message.resendId || '',
+        source: 'store',
+        deliveryStatus: 'sent',
         createdAt: message.createdAt?.toDate?.().toISOString() || null,
       }
-    })
-    const inboundEmails = inboundSnapshot.docs.map((document) => {
+    }).filter((message) => !hiddenEmailIds.has(message.id) && !hiddenEmailIds.has(message.resendId))
+    const storedInboundEmails = inboundSnapshot.docs.map((document) => {
       const email = document.data()
       return {
         id: document.id,
@@ -109,7 +115,48 @@ export default async function handler(request, response) {
         status: email.status === 'old' ? 'old' : 'new',
         createdAt: email.createdAt?.toDate?.().toISOString() || null,
       }
-    })
+    }).filter((email) => !hiddenEmailIds.has(email.id))
+
+    let resendSent = []
+    let resendReceived = []
+    let resendSyncError = ''
+    const resendKey = process.env.RESEND_INBOUND_API_KEY || process.env.RESEND_API_KEY
+    if (resendKey) {
+      const resend = new Resend(resendKey)
+      const [sentResult, receivedResult] = await Promise.all([
+        resend.emails.list({ limit: 100 }).catch((error) => ({ data: null, error })),
+        resend.emails.receiving.list({ limit: 100 }).catch((error) => ({ data: null, error })),
+      ])
+      if (sentResult.data?.data) resendSent = sentResult.data.data
+      if (receivedResult.data?.data) resendReceived = receivedResult.data.data
+      const syncErrors = [sentResult.error?.message, receivedResult.error?.message].filter(Boolean)
+      resendSyncError = syncErrors.join(' ')
+    }
+
+    const localResendIds = new Set(localMessages.map((message) => message.resendId).filter(Boolean))
+    const messages = [...localMessages, ...resendSent.filter((email) => !hiddenEmailIds.has(email.id) && !localResendIds.has(email.id)).map((email) => ({
+      id: email.id,
+      resendId: email.id,
+      uid: '',
+      email: Array.isArray(email.to) ? email.to.join(', ') : '',
+      subject: email.subject || '(No subject)',
+      text: 'Sent through Resend. Open Resend to view the complete rendered email.',
+      source: 'resend',
+      deliveryStatus: email.last_event || 'sent',
+      createdAt: email.created_at || null,
+    }))].sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))
+
+    const storedInboundById = new Map(storedInboundEmails.map((email) => [email.id, email]))
+    const inboundEmails = [...storedInboundEmails, ...resendReceived.filter((email) => !hiddenEmailIds.has(email.id) && !storedInboundById.has(email.id)).map((email) => ({
+      id: email.id,
+      from: email.from || 'Unknown sender',
+      to: Array.isArray(email.to) ? email.to : [],
+      subject: email.subject || '(No subject)',
+      text: 'This email is stored in Resend. Open Resend to view its complete content.',
+      attachmentCount: Array.isArray(email.attachments) ? email.attachments.length : 0,
+      status: 'new',
+      createdAt: email.created_at || null,
+    }))].sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))
     const supportRequests = supportSnapshot.docs.map((document) => {
       const ticket = document.data()
       return {
@@ -155,6 +202,8 @@ export default async function handler(request, response) {
         stripeWebhook: Boolean(process.env.STRIPE_WEBHOOK_SECRET),
         email: Boolean(process.env.RESEND_API_KEY && process.env.FROM_EMAIL),
         inboundEmail: Boolean(process.env.RESEND_WEBHOOK_SECRET && (process.env.RESEND_INBOUND_API_KEY || process.env.RESEND_API_KEY)),
+        resendSync: Boolean(resendKey && !resendSyncError),
+        resendSyncError,
         fulfillmentEmail: Boolean(process.env.RESEND_API_KEY && process.env.FROM_EMAIL && (process.env.FULFILLMENT_EMAIL || process.env.SUPPORT_REPLY_TO)),
       },
     })

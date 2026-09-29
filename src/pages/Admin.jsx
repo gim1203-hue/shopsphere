@@ -168,7 +168,7 @@ export default function Admin() {
     try {
       await adminRequest(session, '/api/admin-message', {
         method: 'POST',
-        body: { uid: messageCustomer.uid, ...messageForm },
+        body: { uid: messageCustomer.uid || '', email: messageCustomer.email, ...messageForm },
       })
       setMessageCustomer(null)
       setMessageForm({ subject: '', text: '' })
@@ -220,6 +220,28 @@ export default function Admin() {
     try {
       await adminRequest(session, '/api/admin-inbound-email', { method: 'POST', body: { emailId: email.id, action } })
       setNotice(action === 'delete' ? 'Email deleted from the store dashboard.' : action === 'mark_read' ? 'Email moved to Old.' : 'Email moved to New.')
+      await loadData()
+    } catch (actionError) {
+      setError(actionError.message)
+    } finally {
+      setWorking(false)
+    }
+  }
+
+  function emailAgain(message) {
+    const registeredCustomer = data.customers.find((customer) => customer.email?.toLowerCase() === message.email?.toLowerCase())
+    setMessageCustomer(registeredCustomer || { uid: '', name: message.email, email: message.email })
+    setMessageForm({ subject: message.subject?.startsWith('Re:') ? message.subject : `Re: ${message.subject || 'Your message'}`, text: '' })
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  async function deleteSentMessage(message) {
+    if (!window.confirm(`Delete “${message.subject}” from this dashboard?`)) return
+    setWorking(true)
+    setError('')
+    try {
+      await adminRequest(session, '/api/admin-email-record', { method: 'POST', body: { emailId: message.id, source: message.source } })
+      setNotice('Email removed from the store dashboard.')
       await loadData()
     } catch (actionError) {
       setError(actionError.message)
@@ -346,15 +368,16 @@ export default function Admin() {
         </section>}
 
         {tab === 'messages' && <>
-          <section className="admin-panel admin-inbox"><div className="admin-panel-heading"><div><h2>Customer inbox</h2><p>New emails received through Resend appear here automatically.</p></div><div className="admin-heading-actions"><a className="admin-small-button" href="https://resend.com/emails" target="_blank" rel="noreferrer">Open Resend <ExternalLink size={14} /></a><span className={`admin-status ${data.integrations.inboundEmail ? 'paid' : 'pending'}`}>{data.integrations.inboundEmail ? 'Receiving connected' : 'Webhook setup needed'}</span></div></div>
+          <section className="admin-panel admin-inbox"><div className="admin-panel-heading"><div><h2>Customer inbox</h2><p>Incoming emails synchronized from Resend and your support webhook.</p></div><div className="admin-heading-actions"><a className="admin-small-button" href="https://resend.com/emails" target="_blank" rel="noreferrer">Open Resend <ExternalLink size={14} /></a><span className={`admin-status ${data.integrations.inboundEmail || data.integrations.resendSync ? 'paid' : 'pending'}`}>{data.integrations.inboundEmail ? 'Live receiving connected' : data.integrations.resendSync ? 'Resend synced' : 'Inbox access needed'}</span></div></div>
+            {data.integrations.resendSyncError && <p className="admin-alert error">Resend inbox sync needs an API key with email-reading access. Webhook messages will still appear after receiving is configured.</p>}
             <div className="admin-inbox-filters" role="tablist" aria-label="Email categories"><button type="button" className={mailboxView === 'new' ? 'active' : ''} onClick={() => setMailboxView('new')}>New <span>{data.inboundEmails.filter((email) => email.status === 'new').length}</span></button><button type="button" className={mailboxView === 'old' ? 'active' : ''} onClick={() => setMailboxView('old')}>Old <span>{data.inboundEmails.filter((email) => email.status === 'old').length}</span></button></div>
             <div className="admin-inbox-list">{data.inboundEmails.filter((email) => email.status === mailboxView).map((email) => <article className="admin-inbox-item" key={email.id}><header><div><strong>{email.subject}</strong><span>{email.from} · {displayDate(email.createdAt)}</span></div>{email.attachmentCount > 0 && <span className="admin-attachment"><Paperclip size={13} /> {email.attachmentCount}</span>}</header><p>{email.text}</p><footer><button type="button" className="admin-small-button" disabled={working} onClick={() => updateInboundEmail(email, mailboxView === 'new' ? 'mark_read' : 'mark_new')}>{mailboxView === 'new' ? 'Move to Old' : 'Move to New'}</button><button type="button" className="admin-small-button danger" disabled={working} onClick={() => updateInboundEmail(email, 'delete')}><Trash2 size={13} /> Delete</button></footer></article>)}{!data.inboundEmails.some((email) => email.status === mailboxView) && <p className="admin-empty">No {mailboxView} customer emails.</p>}</div>
           </section>
           <div className="admin-messages-grid">
-          <section className="admin-panel"><div className="admin-panel-heading"><div><h2>Write a customer</h2><p>Choose a customer from the Customers tab, then send an email here.</p></div></div>
-            {messageCustomer ? <form className="admin-message-form" onSubmit={sendMessage}><label>To<input value={`${messageCustomer.name || 'Customer'} <${messageCustomer.email}>`} disabled /></label><label>Subject<input required maxLength="160" value={messageForm.subject} onChange={(event) => setMessageForm({ ...messageForm, subject: event.target.value })} /></label><label>Message<textarea required rows="8" maxLength="6000" value={messageForm.text} onChange={(event) => setMessageForm({ ...messageForm, text: event.target.value })} /></label><div><button type="button" className="admin-small-button" onClick={() => setMessageCustomer(null)}>Cancel</button><button type="submit" className="admin-primary" disabled={working}><Mail size={16} /> Send email</button></div></form> : <p className="admin-empty">Choose a customer from the Customers tab to write them.</p>}
+          <section className="admin-panel"><div className="admin-panel-heading"><div><h2>Write an email</h2><p>Select an existing customer or use Email again from a sent message.</p></div></div>
+            <form className="admin-message-form" onSubmit={sendMessage}><label>To<select value={messageCustomer?.uid || (messageCustomer?.email ? `email:${messageCustomer.email}` : '')} onChange={(event) => { const value = event.target.value; if (!value) setMessageCustomer(null); else if (value.startsWith('email:')) setMessageCustomer({ uid: '', name: value.slice(6), email: value.slice(6) }); else setMessageCustomer(data.customers.find((customer) => customer.uid === value) || null) }}><option value="">Choose a recipient</option>{messageCustomer?.email && !messageCustomer.uid && <option value={`email:${messageCustomer.email}`}>{messageCustomer.email}</option>}{data.customers.filter((customer) => customer.email).map((customer) => <option value={customer.uid} key={customer.uid}>{customer.name || 'Customer'} — {customer.email}</option>)}</select></label><label>Subject<input required maxLength="160" disabled={!messageCustomer} value={messageForm.subject} onChange={(event) => setMessageForm({ ...messageForm, subject: event.target.value })} /></label><label>Message<textarea required rows="8" maxLength="6000" disabled={!messageCustomer} value={messageForm.text} onChange={(event) => setMessageForm({ ...messageForm, text: event.target.value })} /></label><div><button type="button" className="admin-small-button" onClick={() => { setMessageCustomer(null); setMessageForm({ subject: '', text: '' }) }}>Clear</button><button type="submit" className="admin-primary" disabled={working || !messageCustomer}><Mail size={16} /> Send email</button></div></form>
           </section>
-          <section className="admin-panel"><div className="admin-panel-heading"><h2>Sent messages</h2></div>{data.messages.map((message) => <article className="admin-message-item" key={message.id}><strong>{message.subject}</strong><span>{message.email} · {displayDate(message.createdAt)}</span><p>{message.text}</p></article>)}{!data.messages.length && <p className="admin-empty">Sent messages will appear here.</p>}</section>
+          <section className="admin-panel"><div className="admin-panel-heading"><div><h2>Sent messages</h2><p>Store messages and Resend delivery records.</p></div><span className="admin-status paid">{data.messages.length} total</span></div>{data.messages.map((message) => <article className="admin-message-item" key={`${message.source}-${message.id}`}><header><div><strong>{message.subject}</strong><span>{message.email} · {displayDate(message.createdAt)}</span></div><span className={`admin-status ${message.deliveryStatus === 'delivered' ? 'paid' : 'pending'}`}>{message.deliveryStatus || 'sent'}</span></header><p>{message.text}</p><footer><button type="button" className="admin-small-button" onClick={() => emailAgain(message)}><Mail size={13} /> Email again</button><button type="button" className="admin-small-button danger" disabled={working} onClick={() => deleteSentMessage(message)}><Trash2 size={13} /> Delete</button></footer></article>)}{!data.messages.length && <p className="admin-empty">No sent messages are available yet.</p>}</section>
           </div>
         </>}
 

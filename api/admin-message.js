@@ -15,14 +15,15 @@ export default async function handler(request, response) {
     }
 
     const uid = String(request.body?.uid || '')
+    const requestedEmail = emailAddress(request.body?.email)
     const subject = String(request.body?.subject || '').trim().slice(0, 160)
     const text = String(request.body?.text || '').trim().slice(0, 6000)
-    if (!uid || !subject || !text) {
+    if ((!uid && !requestedEmail) || !subject || !text) {
       return response.status(400).json({ error: 'Choose a customer and enter a subject and message.' })
     }
 
-    const customer = await auth.getUser(uid)
-    const customerEmail = emailAddress(customer.email)
+    const customer = uid ? await auth.getUser(uid) : null
+    const customerEmail = emailAddress(customer?.email || requestedEmail)
     if (!customerEmail) return response.status(400).json({ error: 'This customer has no valid email address.' })
 
     const emailResponse = await fetch('https://api.resend.com/emails', {
@@ -39,16 +40,18 @@ export default async function handler(request, response) {
         reply_to: emailAddress(process.env.SUPPORT_REPLY_TO) || undefined,
       }),
     })
+    const providerResult = await emailResponse.json().catch(() => ({}))
     if (!emailResponse.ok) {
-      const providerError = await emailResponse.json().catch(() => ({}))
+      const providerError = providerResult
       const message = String(providerError.message || `Email provider returned ${emailResponse.status}`).slice(0, 300)
       console.error('Customer email provider returned:', emailResponse.status, message)
       return response.status(502).json({ error: `Email could not be sent: ${message}` })
     }
 
     await db.collection('customerMessages').add({
-      uid,
+      uid: uid || '',
       email: customerEmail,
+      resendId: providerResult.id || '',
       subject,
       text,
       adminUid: user.uid,
