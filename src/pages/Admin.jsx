@@ -257,6 +257,7 @@ export default function Admin() {
             <section className="admin-panel"><div className="admin-panel-heading"><h2>Connected services</h2></div>
               <div className="admin-service-row"><span>Firebase customers and carts</span><strong className="connected">Connected</strong></div>
               <div className="admin-service-row"><span>Stripe payment management</span><strong className={data.integrations.stripe ? 'connected' : 'disconnected'}>{data.integrations.stripe ? 'Connected' : 'Needs setup'}</strong></div>
+              <div className="admin-service-row"><span>Automatic paid-order saving</span><strong className={data.integrations.stripeWebhook ? 'connected' : 'disconnected'}>{data.integrations.stripeWebhook ? 'Connected' : 'Needs webhook'}</strong></div>
               <div className="admin-service-row"><span>Customer email</span><strong className={data.integrations.email ? 'connected' : 'disconnected'}>{data.integrations.email ? 'Connected' : 'Needs setup'}</strong></div>
               <div className="admin-service-row"><span>Paid-order fulfillment email</span><strong className={data.integrations.fulfillmentEmail ? 'connected' : 'disconnected'}>{data.integrations.fulfillmentEmail ? 'Connected' : 'Needs setup'}</strong></div>
               <p className="admin-note">Email replies go to your configured support inbox.</p>

@@ -137,6 +137,7 @@ export default async function handler(request, response) {
       errorNextCursor: errorsSnapshot.size === 50 ? errorsSnapshot.docs.at(-1)?.id || null : null,
       integrations: {
         stripe: Boolean(process.env.STRIPE_SECRET_KEY),
+        stripeWebhook: Boolean(process.env.STRIPE_WEBHOOK_SECRET),
         email: Boolean(process.env.RESEND_API_KEY && process.env.FROM_EMAIL),
         fulfillmentEmail: Boolean(process.env.RESEND_API_KEY && process.env.FROM_EMAIL && (process.env.FULFILLMENT_EMAIL || process.env.SUPPORT_REPLY_TO)),
       },
