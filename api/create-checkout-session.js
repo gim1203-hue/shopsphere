@@ -81,7 +81,7 @@ export default async function handler(request, response) {
   }
 
   const subtotal = resolved.reduce((sum, item) => sum + item.unitAmount * item.quantity, 0)
-  const siteUrl = (process.env.SITE_URL || 'https://askkhan.vercel.app').replace(/\/$/, '')
+  const siteUrl = (process.env.SITE_URL || 'https://www.homedepo.tech').replace(/\/$/, '')
 
   try {
     const session = await stripe.checkout.sessions.create({

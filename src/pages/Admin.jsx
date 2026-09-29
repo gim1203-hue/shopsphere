@@ -1,5 +1,5 @@
 import { createElement, useCallback, useEffect, useMemo, useState } from 'react'
-import { AlertTriangle, ExternalLink, Mail, MapPin, MessageCircle, Package, Paperclip, Plus, ReceiptText, RefreshCw, Search, ShieldCheck, Store, Trash2, Users, Wallet, X } from 'lucide-react'
+import { AlertTriangle, ExternalLink, KeyRound, Mail, MapPin, MessageCircle, Package, Paperclip, Plus, ReceiptText, RefreshCw, Search, ShieldCheck, Store, Trash2, Users, Wallet, X } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useCatalog } from '../context/CatalogContext'
 import { formatCurrency } from '../utils/format'
@@ -181,6 +181,20 @@ export default function Admin() {
     }
   }
 
+  async function sendPasswordReset(customer) {
+    if (!window.confirm(`Send a secure password reset link to ${customer.email}?`)) return
+    setWorking(true)
+    setError('')
+    try {
+      await adminRequest(session, '/api/admin-password-reset', { method: 'POST', body: { uid: customer.uid } })
+      setNotice(`Password reset link sent to ${customer.email}.`)
+    } catch (actionError) {
+      setError(actionError.message)
+    } finally {
+      setWorking(false)
+    }
+  }
+
   async function replyToSupport(ticket, close = false) {
     const text = String(supportReplies[ticket.id] || '').trim()
     if (!close && !text) return
@@ -322,7 +336,7 @@ export default function Admin() {
         {tab === 'customers' && <section className="admin-panel">
           <div className="admin-panel-heading"><div><h2>Customers</h2><p>Signed-in accounts and their most recently synced carts.</p></div><label className="admin-search"><Search size={16} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Find by name or email" /></label></div>
           <div className="admin-table-wrap"><table><thead><tr><th>Customer</th><th>Joined</th><th>Cart</th><th>Items</th><th /></tr></thead><tbody>
-            {matchingCustomers.map((customer) => <tr key={customer.uid}><td><strong>{customer.name || 'Customer'}</strong><small>{customer.email}</small></td><td>{displayDate(customer.createdAt)}</td><td>{customer.cart.map((item) => `${item.name} ×${item.quantity}`).join(', ') || 'Cart empty / not synced'}</td><td>{customer.cart.reduce((count, item) => count + item.quantity, 0)}</td><td><button type="button" className="admin-small-button" disabled={!customer.email} onClick={() => { setMessageCustomer(customer); setTab('messages') }}>Email</button></td></tr>)}
+            {matchingCustomers.map((customer) => <tr key={customer.uid}><td><strong>{customer.name || 'Customer'}</strong><small>{customer.email}</small></td><td>{displayDate(customer.createdAt)}</td><td>{customer.cart.map((item) => `${item.name} ×${item.quantity}`).join(', ') || 'Cart empty / not synced'}</td><td>{customer.cart.reduce((count, item) => count + item.quantity, 0)}</td><td><div className="admin-customer-actions"><button type="button" className="admin-small-button" disabled={!customer.email} onClick={() => { setMessageCustomer(customer); setTab('messages') }}><Mail size={13} /> Email</button><button type="button" className="admin-small-button" disabled={working || !customer.email} onClick={() => sendPasswordReset(customer)}><KeyRound size={13} /> Send reset link</button></div></td></tr>)}
           </tbody></table></div>
           {data.customerNextCursor && <button type="button" className="admin-small-button" disabled={loadingMore} onClick={() => loadMore('customers')}>{loadingMore ? 'Loading…' : 'Load more customers'}</button>}
           {!matchingCustomers.length && <p className="admin-empty">No customers match that search.</p>}
