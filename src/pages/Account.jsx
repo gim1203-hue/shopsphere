@@ -1,4 +1,4 @@
-import { ChevronDown, Heart, LogOut, Mail, MapPin, MessageCircle, MessageSquareText, Package, Phone, Plus, Printer, Save, Trash2, Truck, UserRound } from 'lucide-react'
+import { ChevronDown, Heart, LogOut, Mail, MapPin, MessageCircle, MessageSquareText, Package, Phone, Plus, Printer, Save, Settings, Trash2, Truck, UserRound } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
@@ -81,6 +81,7 @@ export default function Account() {
         <Link to="/favorites"><Heart /> Favorites <span>{favoriteProducts.length}</span></Link>
         <button className={view === 'orders' ? 'active' : ''} onClick={() => chooseView('orders')}><Package /> Orders <span>{orders.length || ''}</span></button>
         <button className={view === 'addresses' ? 'active' : ''} onClick={() => chooseView('addresses')}><MapPin /> Addresses <span>{addresses.length || ''}</span></button>
+        <Link to="/admin"><Settings /> Dashboard</Link>
         <button onClick={signOut}><LogOut /> Sign out</button>
       </aside>
       <div className="account-content">
