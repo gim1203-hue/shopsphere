@@ -29,7 +29,7 @@ export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [suggestionsOpen, setSuggestionsOpen] = useState(false)
-  const [isAdmin, setIsAdmin] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(null)
 
   const navigate = useNavigate()
   const location = useLocation()
@@ -41,13 +41,17 @@ export default function Header() {
       setIsAdmin(false)
       return undefined
     }
+    setIsAdmin(null)
     session.getIdToken()
       .then((token) => fetch('/api/admin-access', { headers: { Authorization: `Bearer ${token}` } }))
       .then((response) => {
-        if (active) setIsAdmin(response.ok)
+        if (!active) return
+        if (response.ok) setIsAdmin(true)
+        else if (response.status === 401 || response.status === 403) setIsAdmin(false)
+        else setIsAdmin(null)
       })
       .catch(() => {
-        if (active) setIsAdmin(false)
+        if (active) setIsAdmin(null)
       })
     return () => { active = false }
   }, [session])
@@ -144,6 +148,10 @@ export default function Header() {
               Customer Service
             </NavLink>
 
+            {user && isAdmin !== false && <NavLink className={navClass} to="/admin" onClick={() => setMenuOpen(false)}>
+              Dashboard
+            </NavLink>}
+
           </nav>
 
           <div className="header-actions">
@@ -175,7 +183,7 @@ export default function Header() {
               <UserRound />
             </Link>
 
-            {isAdmin && <Link className="icon-button" to="/admin" aria-label="Store management" title="Store management"><Settings /></Link>}
+            {user && isAdmin !== false && <Link className="icon-button" to="/admin" aria-label="Store management dashboard" title="Store management dashboard"><Settings /></Link>}
 
             <Link
               className="icon-button"
