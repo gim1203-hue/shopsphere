@@ -6,6 +6,15 @@ import { formatCurrency } from '../utils/format'
 
 const emptyData = { customers: [], orders: [], products: [], messages: [], inboundEmails: [], supportRequests: [], passwordResetRequests: [], errorReports: [], customerNextCursor: null, orderNextCursor: null, errorNextCursor: null, integrations: null }
 const newProduct = () => ({ id: '', name: '', category: '', price: '', stock: '', image: '', description: '', color: '', measurements: '', sellerName: '', sellerContact: '', sellerEmail: '', featured: false })
+const dashboardTabs = [
+  { id: 'overview', label: 'Overview', icon: Wallet },
+  { id: 'customers', label: 'Customers', icon: Users },
+  { id: 'orders', label: 'Orders & payments', icon: Package },
+  { id: 'support', label: 'Live support', icon: MessageCircle },
+  { id: 'products', label: 'Products', icon: Package },
+  { id: 'messages', label: 'Messages', icon: Mail },
+  { id: 'errors', label: 'Errors', icon: AlertTriangle },
+]
 
 async function adminRequest(session, endpoint, { method = 'GET', body } = {}) {
   const token = await session.getIdToken()
@@ -41,7 +50,10 @@ export default function Admin() {
   const { session } = useAuth()
   const { refreshCatalog } = useCatalog()
   const [data, setData] = useState(emptyData)
-  const [tab, setTab] = useState('overview')
+  const [tab, setTab] = useState(() => {
+    const savedTab = typeof window === 'undefined' ? '' : window.localStorage.getItem('stopshop-dashboard-tab')
+    return dashboardTabs.some((item) => item.id === savedTab) ? savedTab : 'overview'
+  })
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [working, setWorking] = useState(false)
@@ -70,6 +82,10 @@ export default function Admin() {
   useEffect(() => {
     if (session) loadData()
   }, [loadData, session])
+
+  useEffect(() => {
+    window.localStorage.setItem('stopshop-dashboard-tab', tab)
+  }, [tab])
 
   useEffect(() => {
     if (tab !== 'support' || !session) return undefined
@@ -278,16 +294,6 @@ export default function Admin() {
     return <section className="container admin-denied"><ShieldCheck /><h1>Store management unavailable</h1><p>{error}</p><button type="button" className="button dark" onClick={refresh}>Try again</button></section>
   }
 
-  const tabs = [
-    { id: 'overview', label: 'Overview', icon: Wallet },
-    { id: 'customers', label: 'Customers', icon: Users },
-    { id: 'orders', label: 'Orders & payments', icon: Package },
-    { id: 'support', label: 'Live support', icon: MessageCircle },
-    { id: 'products', label: 'Products', icon: Package },
-    { id: 'messages', label: 'Messages', icon: Mail },
-    { id: 'errors', label: 'Errors', icon: AlertTriangle },
-  ]
-
   async function resolveError(report) {
     setWorking(true)
     setError('')
@@ -313,7 +319,7 @@ export default function Admin() {
         {(error || notice) && <p className={error ? 'admin-alert error' : 'admin-alert'} role="status">{error || notice}</p>}
 
         <nav className="admin-tabs" aria-label="Store management sections">
-          {tabs.map((item) => <button type="button" key={item.id} className={tab === item.id ? 'active' : ''} onClick={() => setTab(item.id)}>{createElement(item.icon, { size: 17 })}{item.label}</button>)}
+          {dashboardTabs.map((item) => <button type="button" key={item.id} className={tab === item.id ? 'active' : ''} onClick={() => setTab(item.id)}>{createElement(item.icon, { size: 17 })}{item.label}</button>)}
         </nav>
 
         {tab === 'overview' && <>
