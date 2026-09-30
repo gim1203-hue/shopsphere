@@ -17,6 +17,11 @@ async function adminRequest(session, endpoint, { method = 'GET', body } = {}) {
     },
     ...(body ? { body: JSON.stringify(body) } : {}),
   })
+  const contentType = response.headers.get('content-type') || ''
+  if (!contentType.includes('application/json')) {
+    const message = (await response.text()).trim()
+    throw new Error(message && !message.startsWith('<') ? message.slice(0, 300) : `Store management service returned HTTP ${response.status}. Please try again.`)
+  }
   const data = await response.json()
   if (!response.ok) throw new Error(data.error || 'Admin request failed')
   return data
