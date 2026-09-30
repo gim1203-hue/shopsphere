@@ -202,9 +202,9 @@ export default function ProductDetails() {
                 <Truck />
                 <span>
                   <strong>
-                    Free delivery
+                    Delivery estimate
                   </strong>
-                  On orders over $100
+                  Contact support for timing
                 </span>
               </div>
 

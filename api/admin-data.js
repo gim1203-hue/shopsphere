@@ -49,7 +49,7 @@ export default async function handler(request, response) {
       const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
       const sessions = await stripe.checkout.sessions.list({
         limit: 50,
-        expand: ['data.line_items', 'data.payment_intent.latest_charge'],
+        expand: ['data.line_items', 'data.payment_intent.latest_charge.balance_transaction'],
         ...(orderCursor ? { starting_after: orderCursor } : {}),
       })
       const fulfillmentDocuments = sessions.data.length
@@ -60,6 +60,11 @@ export default async function handler(request, response) {
         const fulfillment = fulfillmentBySession.get(session.id) || {}
         const intent = typeof session.payment_intent === 'object' ? session.payment_intent : null
         const charge = typeof intent?.latest_charge === 'object' ? intent.latest_charge : null
+        const balanceTransaction = typeof charge?.balance_transaction === 'object' ? charge.balance_transaction : null
+        const supplierCost = (fulfillment.items || []).reduce((total, item) => total + Math.round(Number(item.sourcePrice || 0) * 100) * Number(item.quantity || 1), 0)
+        const tax = session.total_details?.amount_tax || 0
+        const stripeFee = balanceTransaction?.fee || 0
+        const estimatedProfit = (session.amount_total || 0) - tax - stripeFee - supplierCost
         return {
           id: session.id,
           name: fulfillment.customerName || session.customer_details?.name || '',
@@ -75,6 +80,13 @@ export default async function handler(request, response) {
           receiptUrl: charge?.receipt_url || null,
           fulfillmentStatus: fulfillment.fulfillmentStatus || (session.payment_status === 'paid' ? 'needs_order_details' : 'awaiting_payment'),
           amount: session.amount_total || 0,
+          amountSubtotal: session.amount_subtotal || 0,
+          amountShipping: session.total_details?.amount_shipping || 0,
+          amountTax: tax,
+          amountDiscount: session.total_details?.amount_discount || 0,
+          stripeFee,
+          supplierCost,
+          estimatedProfit,
           currency: session.currency || 'usd',
           paymentStatus: session.payment_status,
           refunded: refundsBySession.has(session.id),

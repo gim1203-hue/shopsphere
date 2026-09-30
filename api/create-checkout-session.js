@@ -99,19 +99,15 @@ export default async function handler(request, response) {
       })),
       billing_address_collection: 'auto',
       phone_number_collection: { enabled: true },
-      shipping_address_collection: { allowed_countries: ['US', 'CA', 'GB'] },
+      shipping_address_collection: { allowed_countries: ['US'] },
       shipping_options: [{
         shipping_rate_data: {
           type: 'fixed_amount',
           fixed_amount: { amount: subtotal >= 10000 ? 0 : 900, currency: 'usd' },
           display_name: subtotal >= 10000 ? 'Complimentary shipping' : 'Standard shipping',
-          delivery_estimate: {
-            minimum: { unit: 'business_day', value: 3 },
-            maximum: { unit: 'business_day', value: 7 },
-          },
         },
       }],
-      automatic_tax: { enabled: false },
+      automatic_tax: { enabled: true },
       customer_creation: 'always',
       customer_email: account.user.email || undefined,
       client_reference_id: account.user.uid,

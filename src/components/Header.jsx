@@ -8,7 +8,7 @@ import {
   X,
 } from 'lucide-react'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Link,
   NavLink,
@@ -27,13 +27,13 @@ export default function Header() {
   const { products } = useCatalog()
 
   const [menuOpen, setMenuOpen] = useState(false)
-  const [searchOpen, setSearchOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [suggestionsOpen, setSuggestionsOpen] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
 
   const navigate = useNavigate()
   const location = useLocation()
+  const searchInputRef = useRef(null)
 
   useEffect(() => {
     let active = true
@@ -62,7 +62,6 @@ export default function Header() {
     navigate(`/shop?q=${encodeURIComponent(product.name)}`)
     setQuery(product.name)
     setSuggestionsOpen(false)
-    setSearchOpen(false)
   }
 
   function submitSearch(event) {
@@ -76,7 +75,6 @@ export default function Header() {
       `/shop?q=${encodeURIComponent(cleanQuery)}`
     )
 
-    setSearchOpen(false)
     setMenuOpen(false)
   }
 
@@ -151,9 +149,7 @@ export default function Header() {
           <div className="header-actions">
             <button
               className="icon-button search-trigger"
-              onClick={() =>
-                setSearchOpen(!searchOpen)
-              }
+              onClick={() => searchInputRef.current?.focus()}
               aria-label="Search StopShop"
               type="button"
             >
@@ -162,9 +158,7 @@ export default function Header() {
 
             <button
               className="icon-button mobile-search-trigger"
-              onClick={() =>
-                setSearchOpen(!searchOpen)
-              }
+              onClick={() => searchInputRef.current?.focus()}
               aria-label="Search StopShop"
               type="button"
             >
@@ -236,16 +230,16 @@ export default function Header() {
           </div>
         </nav>
 
-        {searchOpen && (
-          <form
+        <form
             className="header-search"
             onSubmit={submitSearch}
+            role="search"
           >
             <div className="container">
               <Search />
 
               <input
-                autoFocus
+                ref={searchInputRef}
                 value={query}
                 onFocus={() => setSuggestionsOpen(true)}
                 onChange={(event) => { setQuery(event.target.value); setSuggestionsOpen(true) }}
@@ -261,7 +255,6 @@ export default function Header() {
             </div>
             {suggestionsOpen && suggestions.length > 0 && <div className="search-suggestions container" role="listbox">{suggestions.map((product) => <button type="button" role="option" key={product.id} onClick={() => chooseSuggestion(product)}><img src={product.image} alt="" /><span><strong>{product.name}</strong><small>{product.category} · {product.brand}</small></span></button>)}</div>}
           </form>
-        )}
       </header>
     </>
   )

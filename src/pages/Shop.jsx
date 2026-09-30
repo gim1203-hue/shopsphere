@@ -342,6 +342,7 @@ export default function Shop() {
 
         <div className="shop-results">
           <div className="shop-toolbar">
+            <form className="shop-search-form" role="search" onSubmit={(event) => { event.preventDefault(); setSuggestionsOpen(false); setParam('q', query.trim()) }}>
             <label>
               <Search size={18} />
 
@@ -352,11 +353,14 @@ export default function Shop() {
                   { setParam('q', event.target.value); setSuggestionsOpen(true) }
                 }
                 placeholder="Search StopShop..."
+                aria-label="Search products"
                 aria-autocomplete="list"
                 aria-expanded={suggestionsOpen && matchingSuggestions.length > 0}
               />
               {suggestionsOpen && matchingSuggestions.length > 0 && <div className="shop-search-suggestions search-suggestions" role="listbox">{matchingSuggestions.map((product) => <button type="button" role="option" key={product.id} onClick={() => { setParam('q', product.name); setSuggestionsOpen(false) }}><img src={product.image} alt="" /><span><strong>{product.name}</strong><small>{product.category} · {product.brand}</small></span></button>)}</div>}
             </label>
+            <button className="shop-search-button" type="submit">Search</button>
+            </form>
 
             <button
               type="button"

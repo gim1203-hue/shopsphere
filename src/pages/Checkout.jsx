@@ -43,15 +43,15 @@ export default function Checkout() {
       <div className="container checkout-grid">
         <div className="checkout-form">
           <span className="eyebrow">Secure payment</span><h1>Checkout.</h1>
-          <fieldset><legend>Payment and delivery</legend><p className="demo-note">Stripe securely collects your email, delivery address, and payment information. StopShop never receives or stores your card number.</p></fieldset>
+          <fieldset><legend>Payment and delivery</legend><p className="demo-note">Stripe securely collects your email, U.S. delivery address, and payment information. Sales tax is calculated from the delivery address. Card processing is included in the price, and StopShop never receives or stores your card number.</p></fieldset>
           {!session && <p className="demo-note">Please <Link to="/login">sign in</Link> before paying. This keeps your order, shipment dates, and delivery address in your account.</p>}
           {error && <p className="checkout-error" role="alert">{error}</p>}
-          <button className="button dark place-order" type="button" onClick={beginCheckout} disabled={loading}><LockKeyhole size={16} /> {loading ? 'Opening secure checkout…' : `Pay securely · ${formatCurrency(subtotal + shipping)}`}</button>
+          <button className="button dark place-order" type="button" onClick={beginCheckout} disabled={loading}><LockKeyhole size={16} /> {loading ? 'Opening secure checkout…' : `Continue securely · ${formatCurrency(subtotal + shipping)} before tax`}</button>
         </div>
         <aside className="checkout-summary">
           <h2>Your order</h2>
           {cart.map((item) => <div className="checkout-item" key={item.id}><div><img src={item.image} alt="" /><b>{item.quantity}</b></div><span><strong>{item.name}</strong><small>{item.color}</small></span><strong>{formatCurrency(item.price * item.quantity)}</strong></div>)}
-          <div className="summary-lines"><p><span>Subtotal</span><strong>{formatCurrency(subtotal)}</strong></p><p><span>Estimated delivery</span><strong>{shipping ? formatCurrency(shipping) : 'Complimentary'}</strong></p><p className="grand-total"><span>Estimated total</span><strong>{formatCurrency(subtotal + shipping)} <small>USD</small></strong></p><p><small>Final tax is calculated by Stripe.</small></p></div>
+          <div className="summary-lines"><p><span>Subtotal</span><strong>{formatCurrency(subtotal)}</strong></p><p><span>Shipping</span><strong>{shipping ? formatCurrency(shipping) : 'Complimentary'}</strong></p><p><span>Sales tax</span><strong>Calculated by address</strong></p><p><span>Card processing</span><strong>Included</strong></p><p className="grand-total"><span>Total before tax</span><strong>{formatCurrency(subtotal + shipping)} <small>USD</small></strong></p><p><small>Stripe shows the final tax and charged total before payment.</small></p></div>
         </aside>
       </div>
     </section>

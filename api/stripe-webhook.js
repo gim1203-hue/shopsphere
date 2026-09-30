@@ -25,8 +25,6 @@ async function savePaidOrder(sessionId) {
   const { db } = getFirebaseServices()
   const shipping = session.collected_information?.shipping_details || session.shipping_details || null
   const paidAt = Timestamp.fromMillis((session.created || Math.floor(Date.now() / 1000)) * 1000)
-  const estimatedShipDate = Timestamp.fromMillis(Date.now() + 2 * 86400000)
-  const estimatedDeliveryDate = Timestamp.fromMillis(Date.now() + 7 * 86400000)
   const order = {
     stripeSessionId: session.id,
     number: session.id.slice(-10).toUpperCase(),
@@ -35,6 +33,9 @@ async function savePaidOrder(sessionId) {
     paymentStatus: session.payment_status,
     email: session.customer_details?.email || session.customer_email || '',
     amountSubtotal: session.amount_subtotal || 0,
+    amountShipping: session.total_details?.amount_shipping || 0,
+    amountTax: session.total_details?.amount_tax || 0,
+    amountDiscount: session.total_details?.amount_discount || 0,
     amountTotal: session.amount_total || 0,
     currency: session.currency || 'usd',
     items: (session.line_items?.data || []).map((item) => ({
@@ -45,8 +46,6 @@ async function savePaidOrder(sessionId) {
     shippingAddress: shipping ? { name: shipping.name || '', ...shipping.address } : null,
     shipsFrom: 'StopShop fulfillment network, United States',
     createdAt: paidAt,
-    estimatedShipDate,
-    estimatedDeliveryDate,
     updatedAt: FieldValue.serverTimestamp(),
   }
 
@@ -61,11 +60,12 @@ async function savePaidOrder(sessionId) {
       paymentStatus: session.payment_status,
       invoiceNumber: order.invoiceNumber,
       fulfillmentStatus: 'ready_to_purchase',
+      amountSubtotal: session.amount_subtotal || 0,
+      amountShipping: session.total_details?.amount_shipping || 0,
+      amountTax: session.total_details?.amount_tax || 0,
       amountTotal: session.amount_total || 0,
       currency: session.currency || 'usd',
       paidAt,
-      estimatedShipDate,
-      estimatedDeliveryDate,
       updatedAt: FieldValue.serverTimestamp(),
     }, { merge: true }),
   ])

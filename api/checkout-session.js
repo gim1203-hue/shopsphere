@@ -39,6 +39,9 @@ export default async function handler(request, response) {
       paymentStatus: session.payment_status,
       email: session.customer_details?.email || account.user.email || null,
       amountSubtotal: session.amount_subtotal || 0,
+      amountShipping: session.total_details?.amount_shipping || 0,
+      amountTax: session.total_details?.amount_tax || 0,
+      amountDiscount: session.total_details?.amount_discount || 0,
       amountTotal: session.amount_total || 0,
       currency: session.currency || 'usd',
       items: (session.line_items?.data || []).map((item) => ({
@@ -49,8 +52,6 @@ export default async function handler(request, response) {
       shippingAddress: shipping ? { name: shipping.name || '', ...shipping.address } : null,
       shipsFrom: 'StopShop fulfillment network, United States',
       createdAt: Timestamp.fromMillis((session.created || Math.floor(Date.now() / 1000)) * 1000),
-      estimatedShipDate: Timestamp.fromMillis(Date.now() + 2 * 86400000),
-      estimatedDeliveryDate: Timestamp.fromMillis(Date.now() + 7 * 86400000),
       updatedAt: FieldValue.serverTimestamp(),
     }
     if (paid) {
@@ -65,6 +66,9 @@ export default async function handler(request, response) {
           invoiceNumber: order.invoiceNumber,
           fulfillmentStatus: 'ready_to_purchase',
           amountTotal: session.amount_total || 0,
+          amountSubtotal: session.amount_subtotal || 0,
+          amountShipping: session.total_details?.amount_shipping || 0,
+          amountTax: session.total_details?.amount_tax || 0,
           currency: session.currency || 'usd',
           paidAt: order.createdAt,
           updatedAt: FieldValue.serverTimestamp(),
