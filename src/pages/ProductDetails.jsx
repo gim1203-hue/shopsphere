@@ -240,7 +240,7 @@ export default function ProductDetails() {
                   <strong>
                     Shipping
                   </strong>
-                  Not included · contact support for timing
+                  $9 standard U.S. shipping · 5–10 business days
                 </span>
               </div>
 

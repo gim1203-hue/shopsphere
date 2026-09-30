@@ -16,23 +16,21 @@ export default async function handler(request, response) {
     const { db, user } = await requireAdmin(request)
     const sessionId = String(request.body?.sessionId || '')
     const manualShippingCostCents = dollarsToCents(request.body?.shipping)
-    const manualTaxCostCents = dollarsToCents(request.body?.tax)
     const manualOtherCostCents = dollarsToCents(request.body?.other)
 
     if (!sessionId.startsWith('cs_')) return response.status(400).json({ error: 'Invalid checkout session' })
-    if (manualShippingCostCents === null || manualTaxCostCents === null || manualOtherCostCents === null) {
-      return response.status(400).json({ error: 'Shipping, tax, and other costs must be valid non-negative amounts.' })
+    if (manualShippingCostCents === null || manualOtherCostCents === null) {
+      return response.status(400).json({ error: 'Shipping and other costs must be valid non-negative amounts.' })
     }
 
     await db.collection('fulfillmentOrders').doc(sessionId).set({
       manualShippingCostCents,
-      manualTaxCostCents,
       manualOtherCostCents,
       costsUpdatedAt: new Date(),
       costsUpdatedBy: user.uid,
     }, { merge: true })
 
-    return response.status(200).json({ manualShippingCostCents, manualTaxCostCents, manualOtherCostCents })
+    return response.status(200).json({ manualShippingCostCents, manualOtherCostCents })
   } catch (error) {
     return sendApiError(response, error)
   }

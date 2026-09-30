@@ -99,6 +99,19 @@ export default async function handler(request, response) {
       billing_address_collection: 'auto',
       phone_number_collection: { enabled: true },
       shipping_address_collection: { allowed_countries: ['US'] },
+      shipping_options: [{
+        shipping_rate_data: {
+          type: 'fixed_amount',
+          fixed_amount: { amount: 900, currency: 'usd' },
+          display_name: 'Standard U.S. shipping',
+          delivery_estimate: {
+            minimum: { unit: 'business_day', value: 5 },
+            maximum: { unit: 'business_day', value: 10 },
+          },
+          tax_behavior: 'exclusive',
+          tax_code: 'txcd_92010001',
+        },
+      }],
       automatic_tax: { enabled: true },
       customer_creation: 'always',
       customer_email: account.user.email || undefined,
