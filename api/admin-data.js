@@ -75,6 +75,7 @@ export default async function handler(request, response) {
           phone: fulfillment.customerPhone || session.customer_details?.phone || '',
           shippingAddress: fulfillment.shippingAddress || null,
           items: fulfillment.items || [],
+          supplementalInvoices: fulfillment.supplementalInvoices || [],
           receiptItems: (session.line_items?.data || []).map((item) => ({
             name: item.description || 'Purchased item',
             quantity: item.quantity || 1,

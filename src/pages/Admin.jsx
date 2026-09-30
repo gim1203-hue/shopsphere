@@ -67,6 +67,7 @@ export default function Admin() {
   const [mailboxView, setMailboxView] = useState('new')
   const [supportView, setSupportView] = useState('new')
   const [orderCosts, setOrderCosts] = useState({})
+  const [invoiceCharges, setInvoiceCharges] = useState({})
 
   const loadData = useCallback(async () => {
     setError('')
@@ -219,6 +220,27 @@ export default function Admin() {
         },
       })
       setNotice('Order costs saved and estimated profit updated.')
+      await loadData()
+    } catch (actionError) {
+      setError(actionError.message)
+    } finally {
+      setWorking(false)
+    }
+  }
+
+  async function sendSupplementalInvoice(event, order) {
+    event.preventDefault()
+    const values = invoiceCharges[order.id] || {}
+    if (!window.confirm(`Create and email a payment invoice to ${order.email}?`)) return
+    setWorking(true)
+    setError('')
+    try {
+      const result = await adminRequest(session, '/api/admin-supplemental-invoice', {
+        method: 'POST',
+        body: { sessionId: order.id, shipping: values.shipping || 0, other: values.other || 0, description: values.description || 'Additional order charge' },
+      })
+      setNotice(result.emailSent ? 'Invoice created, emailed, and saved to the customer account.' : `Invoice created and saved to the customer account. Email was not sent${result.emailError ? `: ${result.emailError}` : ' because email is not configured'}.`)
+      setInvoiceCharges((current) => ({ ...current, [order.id]: { shipping: '', other: '', description: '' } }))
       await loadData()
     } catch (actionError) {
       setError(actionError.message)
@@ -413,7 +435,9 @@ export default function Admin() {
               <article><h4><MapPin size={17} /> Customer and delivery</h4><p><span>Name</span><strong>{order.name || 'Not provided'}</strong></p><p><span>Email</span><strong>{order.email || 'Not provided'}</strong></p><p><span>Phone</span><strong>{order.phone || 'Not provided'}</strong></p><p><span>Ship to</span><strong>{displayAddress(order.shippingAddress)}</strong></p></article>
               <article><h4><Store size={17} /> Products to purchase</h4>{order.items?.length ? order.items.map((item, index) => <div className="admin-merchant-item" key={`${item.productId}-${index}`}><img src={item.image} alt="" /><div><strong>{item.quantity} × {item.name}</strong><span>Merchant: {item.merchantName || 'Not provided'}</span><span>Supplier cost: {formatCurrency(Number(item.sourcePrice || 0))} each</span>{item.merchantEmail && <span>Email: {item.merchantEmail}</span>}{item.merchantContact && <span>Contact: {item.merchantContact}</span>}{item.purchaseUrl ? <a href={item.purchaseUrl} target="_blank" rel="noreferrer">Open merchant product <ExternalLink size={14} /></a> : <span>Merchant product link unavailable</span>}</div></div>) : <p>No private item details were stored for this older order.</p>}</article>
             </div>
-            <form className="admin-order-cost-form" onSubmit={(event) => saveOrderCosts(event, order)}><label>Supplier shipping cost<input type="number" min="0" max="100000" step="0.01" value={orderCosts[order.id]?.shipping ?? (order.manualShippingCost / 100).toFixed(2)} onChange={(event) => setOrderCosts((current) => ({ ...current, [order.id]: { ...current[order.id], shipping: event.target.value } }))} /></label><label>Supplier tax cost<input type="number" min="0" max="100000" step="0.01" value={orderCosts[order.id]?.tax ?? (order.manualTaxCost / 100).toFixed(2)} onChange={(event) => setOrderCosts((current) => ({ ...current, [order.id]: { ...current[order.id], tax: event.target.value } }))} /></label><label>Other costs<input type="number" min="0" max="100000" step="0.01" value={orderCosts[order.id]?.other ?? (order.manualOtherCost / 100).toFixed(2)} onChange={(event) => setOrderCosts((current) => ({ ...current, [order.id]: { ...current[order.id], other: event.target.value } }))} /></label><button className="admin-primary" type="submit" disabled={working}>Save costs</button></form>
+            <form className="admin-customer-invoice-form" onSubmit={(event) => sendSupplementalInvoice(event, order)}><header><strong>Send customer supplemental invoice</strong><small>Customer-facing charges only. Stripe calculates sales tax and creates the final receipt after payment.</small></header><label>Shipping charge<input type="number" min="0" max="100000" step="0.01" value={invoiceCharges[order.id]?.shipping || ''} onChange={(event) => setInvoiceCharges((current) => ({ ...current, [order.id]: { ...current[order.id], shipping: event.target.value } }))} placeholder="0.00" /></label><label>Other disclosed charge<input type="number" min="0" max="100000" step="0.01" value={invoiceCharges[order.id]?.other || ''} onChange={(event) => setInvoiceCharges((current) => ({ ...current, [order.id]: { ...current[order.id], other: event.target.value } }))} placeholder="0.00" /></label><label>Description<input maxLength="120" value={invoiceCharges[order.id]?.description || ''} onChange={(event) => setInvoiceCharges((current) => ({ ...current, [order.id]: { ...current[order.id], description: event.target.value } }))} placeholder="Additional order charge" /></label><button className="admin-primary" type="submit" disabled={working}>Create & email invoice</button></form>
+            {order.supplementalInvoices?.length > 0 && <div className="admin-supplemental-list"><strong>Customer invoices</strong>{order.supplementalInvoices.map((invoice) => <p key={invoice.id}><span>{invoice.status === 'paid' ? 'Paid' : 'Payment due'} · {formatCurrency((invoice.status === 'paid' ? invoice.amountTotal : invoice.amountBeforeTax) / 100)}{invoice.status === 'paid' ? '' : ' before tax'}</span><a href={invoice.status === 'paid' && invoice.receiptUrl ? invoice.receiptUrl : invoice.paymentUrl} target="_blank" rel="noreferrer">{invoice.status === 'paid' ? 'Open receipt' : 'Open payment link'} <ExternalLink size={13} /></a></p>)}</div>}
+            <form className="admin-order-cost-form" onSubmit={(event) => saveOrderCosts(event, order)}><header><strong>Private business costs</strong><small>Never shown on the customer invoice.</small></header><label>Supplier shipping cost<input type="number" min="0" max="100000" step="0.01" value={orderCosts[order.id]?.shipping ?? (order.manualShippingCost / 100).toFixed(2)} onChange={(event) => setOrderCosts((current) => ({ ...current, [order.id]: { ...current[order.id], shipping: event.target.value } }))} /></label><label>Supplier tax cost<input type="number" min="0" max="100000" step="0.01" value={orderCosts[order.id]?.tax ?? (order.manualTaxCost / 100).toFixed(2)} onChange={(event) => setOrderCosts((current) => ({ ...current, [order.id]: { ...current[order.id], tax: event.target.value } }))} /></label><label>Other costs<input type="number" min="0" max="100000" step="0.01" value={orderCosts[order.id]?.other ?? (order.manualOtherCost / 100).toFixed(2)} onChange={(event) => setOrderCosts((current) => ({ ...current, [order.id]: { ...current[order.id], other: event.target.value } }))} /></label><button className="admin-primary" type="submit" disabled={working}>Save private costs</button></form>
             <div className="admin-receipt-actions">{order.paymentIntent && <a className="admin-primary" href={order.stripeUrl} target="_blank" rel="noreferrer">Open payment in Stripe <ExternalLink size={14} /></a>}{order.receiptUrl && <a className="admin-small-button" href={order.receiptUrl} target="_blank" rel="noreferrer"><ReceiptText size={14} /> Original customer receipt</a>}<button className="admin-small-button" type="button" onClick={() => printUpdatedReceipt(order)}><ReceiptText size={14} /> Generate updated receipt</button></div>
             <div className="admin-receipt-lines">{order.receiptItems?.map((item, index) => <p key={`${item.name}-${index}`}><span>{item.quantity} × {item.name}</span><strong>{formatCurrency(item.amount / 100)}</strong></p>)}<p><span>Merchandise subtotal</span><strong>{formatCurrency(order.amountSubtotal / 100)}</strong></p><p><span>Customer shipping collected</span><strong>{order.amountShipping ? formatCurrency(order.amountShipping / 100) : 'Not included'}</strong></p><p><span>Customer sales tax collected</span><strong>{formatCurrency(order.amountTax / 100)}</strong></p><p><span>Stripe card fee (actual)</span><strong>−{formatCurrency(order.stripeFee / 100)}</strong></p><p><span>Supplier product cost</span><strong>−{formatCurrency(order.supplierCost / 100)}</strong></p><p><span>Supplier shipping cost</span><strong>−{formatCurrency(order.manualShippingCost / 100)}</strong></p><p><span>Supplier tax cost</span><strong>−{formatCurrency(order.manualTaxCost / 100)}</strong></p><p><span>Other costs</span><strong>−{formatCurrency(order.manualOtherCost / 100)}</strong></p><p className="total"><span>Estimated profit</span><strong>{formatCurrency(order.estimatedProfit / 100)}</strong></p><p><span>Customer paid</span><strong>{formatCurrency(order.amount / 100)}</strong></p></div>
             <p className="admin-note">Estimated profit subtracts customer sales tax, the actual Stripe fee, supplier product cost, and your saved shipping, supplier tax, and other costs. The generated receipt is a private cost statement and does not alter the official Stripe charge.</p>

@@ -2,6 +2,7 @@ import Stripe from 'stripe'
 import { FieldValue, Timestamp } from 'firebase-admin/firestore'
 import { getFirebaseServices, recordErrorReport } from './_lib/firebaseAdmin.js'
 import { invoiceNumber } from './_lib/order.js'
+import { emailAddress } from './_lib/email.js'
 
 export const config = { api: { bodyParser: false } }
 
@@ -16,13 +17,46 @@ async function readRawBody(request) {
 }
 
 async function savePaidOrder(sessionId) {
-  const session = await stripe.checkout.sessions.retrieve(sessionId, { expand: ['line_items'] })
+  const session = await stripe.checkout.sessions.retrieve(sessionId, { expand: ['line_items', 'payment_intent.latest_charge'] })
   if (session.payment_status !== 'paid') return
 
   const userId = String(session.metadata?.userId || session.client_reference_id || '')
   if (!userId) throw new Error(`Paid Stripe session ${session.id} has no customer user id`)
 
   const { db } = getFirebaseServices()
+  if (session.metadata?.type === 'supplemental_invoice') {
+    const originalSessionId = String(session.metadata.originalSessionId || '')
+    if (!originalSessionId.startsWith('cs_')) throw new Error(`Supplemental invoice ${session.id} has no original order`)
+    const fulfillmentRef = db.collection('fulfillmentOrders').doc(originalSessionId)
+    const customerOrderRef = db.collection('customers').doc(userId).collection('orders').doc(originalSessionId)
+    const [fulfillmentDocument, customerOrderDocument] = await Promise.all([fulfillmentRef.get(), customerOrderRef.get()])
+    const charge = typeof session.payment_intent === 'object' && typeof session.payment_intent?.latest_charge === 'object' ? session.payment_intent.latest_charge : null
+    const updateInvoices = (document) => (document.data()?.supplementalInvoices || []).map((invoice) => invoice.id === session.id ? {
+      ...invoice,
+      status: 'paid',
+      amountTax: session.total_details?.amount_tax || 0,
+      amountTotal: session.amount_total || 0,
+      receiptUrl: charge?.receipt_url || '',
+      paidAt: new Date().toISOString(),
+    } : invoice)
+    await Promise.all([
+      fulfillmentRef.set({ supplementalInvoices: updateInvoices(fulfillmentDocument), updatedAt: FieldValue.serverTimestamp() }, { merge: true }),
+      customerOrderRef.set({ supplementalInvoices: updateInvoices(customerOrderDocument), updatedAt: FieldValue.serverTimestamp() }, { merge: true }),
+    ])
+    const customerEmail = emailAddress(session.customer_details?.email || session.customer_email || fulfillmentDocument.data()?.customerEmail)
+    if (customerEmail && charge?.receipt_url && process.env.RESEND_API_KEY && process.env.FROM_EMAIL) {
+      const subject = `Receipt for StopShop order ${originalSessionId.slice(-10).toUpperCase()}`
+      const text = `Your additional payment was received.\n\nAmount paid: $${((session.amount_total || 0) / 100).toFixed(2)}\nSales tax: $${((session.total_details?.amount_tax || 0) / 100).toFixed(2)}\n\nView your official Stripe receipt: ${charge.receipt_url}\n\nThis receipt is also saved under Orders in your StopShop account.`
+      try {
+        const emailResponse = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ from: process.env.FROM_EMAIL, to: [customerEmail], subject, text, reply_to: emailAddress(process.env.SUPPORT_REPLY_TO) || undefined }) })
+        const emailResult = await emailResponse.json().catch(() => ({}))
+        if (emailResponse.ok) await db.collection('customerMessages').add({ uid: userId, email: customerEmail, resendId: emailResult.id || '', subject, text, source: 'supplemental_receipt', createdAt: FieldValue.serverTimestamp() })
+      } catch (emailError) {
+        await recordErrorReport({ source: 'supplemental-receipt-email', message: emailError.message, user: userId }).catch(() => {})
+      }
+    }
+    return
+  }
   const shipping = session.collected_information?.shipping_details || session.shipping_details || null
   const paidAt = Timestamp.fromMillis((session.created || Math.floor(Date.now() / 1000)) * 1000)
   const order = {
