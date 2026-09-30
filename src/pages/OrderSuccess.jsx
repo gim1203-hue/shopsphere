@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext'
 export default function OrderSuccess() {
   const [params] = useSearchParams()
   const { clearCart } = useStore()
-  const { session } = useAuth()
+  const { session, loading: authLoading } = useAuth()
   const [receipt, setReceipt] = useState(null)
   const [error, setError] = useState('')
   const sessionId = params.get('session_id')
@@ -19,10 +19,12 @@ export default function OrderSuccess() {
     }
 
     let cancelled = false
+    if (authLoading) return
     if (!session) {
       setError('Sign in to confirm and save this order.')
       return
     }
+    setError('')
     session.getIdToken().then((token) => fetch(`/api/checkout-session?id=${encodeURIComponent(sessionId)}`, { headers: { Authorization: `Bearer ${token}` } }))
       .then(async (response) => {
         const data = await response.json()
@@ -40,7 +42,7 @@ export default function OrderSuccess() {
       })
 
     return () => { cancelled = true }
-  }, [clearCart, session, sessionId])
+  }, [authLoading, clearCart, session, sessionId])
 
   if (error) return <section className="success-page container"><h1>Payment confirmation pending.</h1><p>{error} Check your Stripe receipt or return to checkout.</p><Link className="button dark" to="/checkout">Return to checkout</Link></section>
   if (!receipt) return <section className="success-page container"><p>Confirming your secure payment…</p></section>

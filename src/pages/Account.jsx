@@ -8,6 +8,12 @@ import { formatCurrency } from '../utils/format'
 const blankAddress = { name: '', line1: '', line2: '', city: '', state: '', postalCode: '', country: 'US' }
 const showDate = (value) => value ? new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'To be confirmed'
 const money = (cents) => formatCurrency(Number(cents || 0) / 100)
+const readApiResponse = async (response) => {
+  const contentType = response.headers.get('content-type') || ''
+  if (contentType.includes('application/json')) return response.json()
+  const message = (await response.text()).trim()
+  throw new Error(message && !message.startsWith('<') ? message.slice(0, 300) : `Account service returned HTTP ${response.status}. Please try again.`)
+}
 
 export default function Account() {
   const { hash } = useLocation()
@@ -33,7 +39,7 @@ export default function Account() {
   useEffect(() => {
     let active = true
     accountFetch('/api/customer-account').then(async (response) => {
-      const data = await response.json()
+      const data = await readApiResponse(response)
       if (!response.ok) throw new Error(data.error || 'Unable to load your account.')
       if (active) { setOrders(data.orders || []); setAddresses(data.addresses || []) }
     }).catch((reason) => active && setError(reason.message)).finally(() => active && setLoading(false))
@@ -52,7 +58,7 @@ export default function Account() {
     event.preventDefault(); setError('')
     try {
       const response = await accountFetch('/api/customer-account', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(address) })
-      const data = await response.json()
+      const data = await readApiResponse(response)
       if (!response.ok) throw new Error(data.error || 'Unable to save address.')
       setAddresses((current) => [data, ...current]); setAddress(blankAddress); setAddingAddress(false)
     } catch (reason) { setError(reason.message) }
@@ -60,7 +66,7 @@ export default function Account() {
   const removeAddress = async (id) => {
     try {
       const response = await accountFetch(`/api/customer-account?id=${encodeURIComponent(id)}`, { method: 'DELETE' })
-      const data = await response.json()
+      const data = await readApiResponse(response)
       if (!response.ok) throw new Error(data.error || 'Unable to remove address.')
       setAddresses((current) => current.filter((item) => item.id !== id))
     } catch (reason) { setError(reason.message) }
