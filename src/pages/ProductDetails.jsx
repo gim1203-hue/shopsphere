@@ -10,13 +10,48 @@ import {
   Truck,
 } from 'lucide-react'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
 import ProductCard from '../components/ProductCard'
 import { useStore } from '../context/StoreContext'
 import { useCatalog } from '../context/CatalogContext'
 import { getProductPrice } from '../utils/pricing'
 import NotFound from './NotFound'
+
+function ProductSeo({ product, price }) {
+  useEffect(() => {
+    const previousTitle = document.title
+    const description = String(product.description || `Shop ${product.name} at StopShop.`).slice(0, 160)
+    document.title = `${product.name} | StopShop`
+    let meta = document.querySelector('meta[name="description"]')
+    if (!meta) {
+      meta = document.createElement('meta')
+      meta.name = 'description'
+      document.head.appendChild(meta)
+    }
+    const previousDescription = meta.content
+    meta.content = description
+    let canonical = document.querySelector('link[rel="canonical"]')
+    const createdCanonical = !canonical
+    if (!canonical) {
+      canonical = document.createElement('link')
+      canonical.rel = 'canonical'
+      document.head.appendChild(canonical)
+    }
+    canonical.href = `https://www.homedepo.tech/products/${encodeURIComponent(product.id)}`
+    const structuredData = document.createElement('script')
+    structuredData.type = 'application/ld+json'
+    structuredData.textContent = JSON.stringify({ '@context': 'https://schema.org', '@type': 'Product', name: product.name, image: product.image ? [product.image] : undefined, description, sku: String(product.id), brand: product.brand ? { '@type': 'Brand', name: product.brand } : undefined, ...(Number(product.reviews) > 0 && Number(product.rating) > 0 ? { aggregateRating: { '@type': 'AggregateRating', ratingValue: Number(product.rating), reviewCount: Number(product.reviews) } } : {}), offers: { '@type': 'Offer', priceCurrency: 'USD', price: price.toFixed(2), availability: 'https://schema.org/InStock', url: canonical.href } })
+    document.head.appendChild(structuredData)
+    return () => {
+      document.title = previousTitle
+      meta.content = previousDescription
+      structuredData.remove()
+      if (createdCanonical) canonical.remove()
+    }
+  }, [price, product])
+  return null
+}
 
 export default function ProductDetails() {
   const { productId } = useParams()
@@ -72,6 +107,7 @@ export default function ProductDetails() {
 
   return (
     <>
+      <ProductSeo product={product} price={askKhanPrice} />
       <section className="container product-detail">
         <Link
           className="back-link"
@@ -202,9 +238,9 @@ export default function ProductDetails() {
                 <Truck />
                 <span>
                   <strong>
-                    Delivery estimate
+                    Shipping
                   </strong>
-                  Contact support for timing
+                  Not included · contact support for timing
                 </span>
               </div>
 

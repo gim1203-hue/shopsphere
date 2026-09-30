@@ -80,7 +80,6 @@ export default async function handler(request, response) {
     return response.status(400).json({ error: 'One or more cart items could not be verified' })
   }
 
-  const subtotal = resolved.reduce((sum, item) => sum + item.unitAmount * item.quantity, 0)
   const siteUrl = (process.env.SITE_URL || 'https://www.homedepo.tech').replace(/\/$/, '')
 
   try {
@@ -100,13 +99,6 @@ export default async function handler(request, response) {
       billing_address_collection: 'auto',
       phone_number_collection: { enabled: true },
       shipping_address_collection: { allowed_countries: ['US'] },
-      shipping_options: [{
-        shipping_rate_data: {
-          type: 'fixed_amount',
-          fixed_amount: { amount: subtotal >= 10000 ? 0 : 900, currency: 'usd' },
-          display_name: subtotal >= 10000 ? 'Complimentary shipping' : 'Standard shipping',
-        },
-      }],
       automatic_tax: { enabled: true },
       customer_creation: 'always',
       customer_email: account.user.email || undefined,

@@ -64,7 +64,10 @@ export default async function handler(request, response) {
         const supplierCost = (fulfillment.items || []).reduce((total, item) => total + Math.round(Number(item.sourcePrice || 0) * 100) * Number(item.quantity || 1), 0)
         const tax = session.total_details?.amount_tax || 0
         const stripeFee = balanceTransaction?.fee || 0
-        const estimatedProfit = (session.amount_total || 0) - tax - stripeFee - supplierCost
+        const manualShippingCost = Math.max(0, Number(fulfillment.manualShippingCostCents || 0))
+        const manualTaxCost = Math.max(0, Number(fulfillment.manualTaxCostCents || 0))
+        const manualOtherCost = Math.max(0, Number(fulfillment.manualOtherCostCents || 0))
+        const estimatedProfit = (session.amount_total || 0) - tax - stripeFee - supplierCost - manualShippingCost - manualTaxCost - manualOtherCost
         return {
           id: session.id,
           name: fulfillment.customerName || session.customer_details?.name || '',
@@ -86,6 +89,9 @@ export default async function handler(request, response) {
           amountDiscount: session.total_details?.amount_discount || 0,
           stripeFee,
           supplierCost,
+          manualShippingCost,
+          manualTaxCost,
+          manualOtherCost,
           estimatedProfit,
           currency: session.currency || 'usd',
           paymentStatus: session.payment_status,

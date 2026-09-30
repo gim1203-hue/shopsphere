@@ -66,6 +66,7 @@ export default function Admin() {
   const [supportReplies, setSupportReplies] = useState({})
   const [mailboxView, setMailboxView] = useState('new')
   const [supportView, setSupportView] = useState('new')
+  const [orderCosts, setOrderCosts] = useState({})
 
   const loadData = useCallback(async () => {
     setError('')
@@ -200,6 +201,43 @@ export default function Admin() {
     } finally {
       setWorking(false)
     }
+  }
+
+  async function saveOrderCosts(event, order) {
+    event.preventDefault()
+    const values = orderCosts[order.id] || {}
+    setWorking(true)
+    setError('')
+    try {
+      await adminRequest(session, '/api/admin-order-costs', {
+        method: 'POST',
+        body: {
+          sessionId: order.id,
+          shipping: values.shipping ?? order.manualShippingCost / 100,
+          tax: values.tax ?? order.manualTaxCost / 100,
+          other: values.other ?? order.manualOtherCost / 100,
+        },
+      })
+      setNotice('Order costs saved and estimated profit updated.')
+      await loadData()
+    } catch (actionError) {
+      setError(actionError.message)
+    } finally {
+      setWorking(false)
+    }
+  }
+
+  function printUpdatedReceipt(order) {
+    const receipt = window.open('', '_blank', 'noopener,noreferrer')
+    if (!receipt) {
+      setError('Allow pop-ups to generate the updated receipt.')
+      return
+    }
+    const safe = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[character]))
+    const line = (label, cents) => `<tr><td>${safe(label)}</td><td>$${(Number(cents || 0) / 100).toFixed(2)}</td></tr>`
+    const items = (order.receiptItems || []).map((item) => line(`${item.quantity} × ${item.name}`, item.amount)).join('')
+    receipt.document.write(`<!doctype html><html><head><title>Order ${safe(order.id)}</title><style>body{font:14px Arial;max-width:760px;margin:40px auto;color:#17251c}h1{margin-bottom:4px}small{color:#667}table{width:100%;border-collapse:collapse;margin-top:25px}td{padding:10px;border-bottom:1px solid #ddd}td:last-child{text-align:right;font-weight:700}.total{font-size:17px}.note{margin-top:24px;padding:12px;background:#f3f1ea}</style></head><body><h1>StopShop order statement</h1><small>Order ${safe(order.id)} · ${safe(order.email || 'Customer')}</small><table>${items}${line('Customer merchandise subtotal', order.amountSubtotal)}${line('Customer sales tax collected', order.amountTax)}${line('Customer shipping collected', order.amountShipping)}${line('Customer paid', order.amount)}${line('Stripe card fee', order.stripeFee)}${line('Supplier product cost', order.supplierCost)}${line('Supplier shipping cost', order.manualShippingCost)}${line('Supplier tax cost', order.manualTaxCost)}${line('Other costs', order.manualOtherCost)}<tr class="total"><td>Estimated profit</td><td>$${(Number(order.estimatedProfit || 0) / 100).toFixed(2)}</td></tr></table><p class="note">Internal updated cost statement. This does not replace or modify the official Stripe customer receipt or amount paid.</p><script>window.print()<\/script></body></html>`)
+    receipt.document.close()
   }
 
   async function sendPasswordReset(customer, requestId = '') {
@@ -373,9 +411,10 @@ export default function Admin() {
               <article><h4><MapPin size={17} /> Customer and delivery</h4><p><span>Name</span><strong>{order.name || 'Not provided'}</strong></p><p><span>Email</span><strong>{order.email || 'Not provided'}</strong></p><p><span>Phone</span><strong>{order.phone || 'Not provided'}</strong></p><p><span>Ship to</span><strong>{displayAddress(order.shippingAddress)}</strong></p></article>
               <article><h4><Store size={17} /> Products to purchase</h4>{order.items?.length ? order.items.map((item, index) => <div className="admin-merchant-item" key={`${item.productId}-${index}`}><img src={item.image} alt="" /><div><strong>{item.quantity} × {item.name}</strong><span>Merchant: {item.merchantName || 'Not provided'}</span><span>Supplier cost: {formatCurrency(Number(item.sourcePrice || 0))} each</span>{item.merchantEmail && <span>Email: {item.merchantEmail}</span>}{item.merchantContact && <span>Contact: {item.merchantContact}</span>}{item.purchaseUrl ? <a href={item.purchaseUrl} target="_blank" rel="noreferrer">Open merchant product <ExternalLink size={14} /></a> : <span>Merchant product link unavailable</span>}</div></div>) : <p>No private item details were stored for this older order.</p>}</article>
             </div>
-            <div className="admin-receipt-actions">{order.paymentIntent && <a className="admin-primary" href={order.stripeUrl} target="_blank" rel="noreferrer">Open payment in Stripe <ExternalLink size={14} /></a>}{order.receiptUrl && <a className="admin-small-button" href={order.receiptUrl} target="_blank" rel="noreferrer"><ReceiptText size={14} /> Customer receipt</a>}</div>
-            <div className="admin-receipt-lines">{order.receiptItems?.map((item, index) => <p key={`${item.name}-${index}`}><span>{item.quantity} × {item.name}</span><strong>{formatCurrency(item.amount / 100)}</strong></p>)}<p><span>Merchandise subtotal</span><strong>{formatCurrency(order.amountSubtotal / 100)}</strong></p><p><span>Shipping collected</span><strong>{formatCurrency(order.amountShipping / 100)}</strong></p><p><span>Sales tax collected</span><strong>{formatCurrency(order.amountTax / 100)}</strong></p><p><span>Stripe card fee (actual)</span><strong>−{formatCurrency(order.stripeFee / 100)}</strong></p><p><span>Supplier product cost</span><strong>−{formatCurrency(order.supplierCost / 100)}</strong></p><p className="total"><span>Estimated profit</span><strong>{formatCurrency(order.estimatedProfit / 100)}</strong></p><p><span>Customer paid</span><strong>{formatCurrency(order.amount / 100)}</strong></p></div>
-            <p className="admin-note">Estimated profit = customer payment minus sales tax, actual Stripe fee, and supplier product cost. Outbound shipping, refunds, disputes, and other operating costs are not yet deducted. Supplier costs, profit, and merchant links stay private.</p>
+            <form className="admin-order-cost-form" onSubmit={(event) => saveOrderCosts(event, order)}><label>Supplier shipping cost<input type="number" min="0" max="100000" step="0.01" value={orderCosts[order.id]?.shipping ?? (order.manualShippingCost / 100).toFixed(2)} onChange={(event) => setOrderCosts((current) => ({ ...current, [order.id]: { ...current[order.id], shipping: event.target.value } }))} /></label><label>Supplier tax cost<input type="number" min="0" max="100000" step="0.01" value={orderCosts[order.id]?.tax ?? (order.manualTaxCost / 100).toFixed(2)} onChange={(event) => setOrderCosts((current) => ({ ...current, [order.id]: { ...current[order.id], tax: event.target.value } }))} /></label><label>Other costs<input type="number" min="0" max="100000" step="0.01" value={orderCosts[order.id]?.other ?? (order.manualOtherCost / 100).toFixed(2)} onChange={(event) => setOrderCosts((current) => ({ ...current, [order.id]: { ...current[order.id], other: event.target.value } }))} /></label><button className="admin-primary" type="submit" disabled={working}>Save costs</button></form>
+            <div className="admin-receipt-actions">{order.paymentIntent && <a className="admin-primary" href={order.stripeUrl} target="_blank" rel="noreferrer">Open payment in Stripe <ExternalLink size={14} /></a>}{order.receiptUrl && <a className="admin-small-button" href={order.receiptUrl} target="_blank" rel="noreferrer"><ReceiptText size={14} /> Original customer receipt</a>}<button className="admin-small-button" type="button" onClick={() => printUpdatedReceipt(order)}><ReceiptText size={14} /> Generate updated receipt</button></div>
+            <div className="admin-receipt-lines">{order.receiptItems?.map((item, index) => <p key={`${item.name}-${index}`}><span>{item.quantity} × {item.name}</span><strong>{formatCurrency(item.amount / 100)}</strong></p>)}<p><span>Merchandise subtotal</span><strong>{formatCurrency(order.amountSubtotal / 100)}</strong></p><p><span>Customer shipping collected</span><strong>{order.amountShipping ? formatCurrency(order.amountShipping / 100) : 'Not included'}</strong></p><p><span>Customer sales tax collected</span><strong>{formatCurrency(order.amountTax / 100)}</strong></p><p><span>Stripe card fee (actual)</span><strong>−{formatCurrency(order.stripeFee / 100)}</strong></p><p><span>Supplier product cost</span><strong>−{formatCurrency(order.supplierCost / 100)}</strong></p><p><span>Supplier shipping cost</span><strong>−{formatCurrency(order.manualShippingCost / 100)}</strong></p><p><span>Supplier tax cost</span><strong>−{formatCurrency(order.manualTaxCost / 100)}</strong></p><p><span>Other costs</span><strong>−{formatCurrency(order.manualOtherCost / 100)}</strong></p><p className="total"><span>Estimated profit</span><strong>{formatCurrency(order.estimatedProfit / 100)}</strong></p><p><span>Customer paid</span><strong>{formatCurrency(order.amount / 100)}</strong></p></div>
+            <p className="admin-note">Estimated profit subtracts customer sales tax, the actual Stripe fee, supplier product cost, and your saved shipping, supplier tax, and other costs. The generated receipt is a private cost statement and does not alter the official Stripe charge.</p>
           </details>)}</div>
           {!data.orders.length && <p className="admin-empty">No payment sessions found.</p>}
         </section>}
